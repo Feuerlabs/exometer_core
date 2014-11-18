@@ -1,0 +1,47 @@
+%% -*- erlang -*-
+%%---- BEGIN COPYRIGHT -------------------------------------------------------
+%%
+%% Copyright (C) 2014 Feuerlabs Inc. All rights reserved.
+%%
+%% This Source Code Form is subject to the terms of the Mozilla Public
+%% License, v. 2.0. If a copy of the MPL was not distributed with this
+%% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%%
+%%---- END COPYRIGHT ---------------------------------------------------------
+
+Script = fun(D,S,Vs) ->
+		 Scr = filename:join(D, S),
+		 case file:script(Scr, orddict:store('SCRIPT', Scr, Vs)) of
+		     {ok, Res} ->
+                 Res;
+		     {error,_} = Err ->
+                 io:fwrite("Error evaluating script ~s~n", [S]),
+			 Err
+		 end
+	 end.
+CONFIG0 = case os:getenv("EXOMETER_CORE_CONFIG_PREPROCESS") of
+	      false -> CONFIG;
+	      []    -> CONFIG;
+	      PPScr -> Script(filename:dirname(PPScr),
+			      filename:basename(PPScr),
+			      [{'CONFIG', CONFIG}])
+	  end.
+CFG1 = case os:getenv("REBAR_DEPS") of
+           false ->
+               CONFIG0;
+           [] ->
+               CONFIG0;
+           Dir ->
+               lists:keystore(deps_dir, 1, CONFIG0, {deps_dir, Dir})
+       end.
+
+Priv = filename:join(filename:dirname(SCRIPT), "priv").
+CFG2 = Script(Priv, "check_edown.script", [{'CONFIG', CFG1}]).
+
+case os:getenv("EXOMETER_CORE_CONFIG_POSTPROCESS") of
+    false  -> CFG2;
+    []     -> CFG2;
+    PoPScr -> Script(filename:dirname(PoPScr),
+		     filename:basename(PoPScr),
+		     [{'CONFIG', CFG2}])
+end.
