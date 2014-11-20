@@ -6,7 +6,7 @@
 
 @doc
 
-[![Build Status](https://travis-ci.org/Feuerlabs/exometer.png?branch=master)](https://travis-ci.org/Feuerlabs/exometer)
+[![Build Status](https://travis-ci.org/Feuerlabs/exometer_core.png?branch=master)](https://travis-ci.org/Feuerlabs/exometer_core)
 
 The Exometer Core package allows for easy and efficient instrumentation of
 Erlang code, allowing crucial data on system performance to be

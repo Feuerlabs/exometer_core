@@ -4,11 +4,11 @@
 
 Copyright (c) 2014 Basho Technologies, Inc.  All Rights Reserved.
 
-__Version:__ Nov 18 2014 10:07:32
+__Version:__ Nov 20 2014 22:15:02
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 
-[![Build Status](https://travis-ci.org/Feuerlabs/exometer.png?branch=master)](https://travis-ci.org/Feuerlabs/exometer)
+[![Build Status](https://travis-ci.org/Feuerlabs/exometer_core.png?branch=master)](https://travis-ci.org/Feuerlabs/exometer_core)
 
 The Exometer Core package allows for easy and efficient instrumentation of
 Erlang code, allowing crucial data on system performance to be
@@ -716,6 +716,7 @@ processing is complete.
 
 
 <table width="100%" border="0" summary="list of modules">
+<tr><td><a href="exo_montest.md" class="module">exo_montest</a></td></tr>
 <tr><td><a href="exometer.md" class="module">exometer</a></td></tr>
 <tr><td><a href="exometer_admin.md" class="module">exometer_admin</a></td></tr>
 <tr><td><a href="exometer_alias.md" class="module">exometer_alias</a></td></tr>
@@ -732,6 +733,7 @@ processing is complete.
 <tr><td><a href="exometer_probe.md" class="module">exometer_probe</a></td></tr>
 <tr><td><a href="exometer_proc.md" class="module">exometer_proc</a></td></tr>
 <tr><td><a href="exometer_report.md" class="module">exometer_report</a></td></tr>
+<tr><td><a href="exometer_report_lager.md" class="module">exometer_report_lager</a></td></tr>
 <tr><td><a href="exometer_report_tty.md" class="module">exometer_report_tty</a></td></tr>
 <tr><td><a href="exometer_shallowtree.md" class="module">exometer_shallowtree</a></td></tr>
 <tr><td><a href="exometer_slide.md" class="module">exometer_slide</a></td></tr>
