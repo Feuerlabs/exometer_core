@@ -3,7 +3,6 @@ script: "make ci"
 otp_release:
     - 17.1
     - 17.0
-    - R17B
     - R16B02
     - R16B01
     - R16B
