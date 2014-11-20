@@ -83,23 +83,15 @@ preset_defaults() ->
     load_predefined().
 
 load_defaults() ->
-    case application:get_env(exometer, defaults) of
-        {ok, E} ->
-            do_load_defaults(env, get_predef(E));
-        _ ->
-            ok
-    end,
+    E = exometer_util:get_env(defaults, []),
+    do_load_defaults(env, get_predef(E)),
     [do_load_defaults(Src, get_predef(D))
      || {Src,D} <- setup:find_env_vars(exometer_defaults)],
     ok.
 
 load_predefined() ->
-    case application:get_env(exometer, predefined) of
-        {ok, E} ->
-            do_load_predef(env, get_predef(E));
-        _ ->
-            ok
-    end,
+    E = exometer_util:get_env(predefined, []),
+    do_load_predef(env, get_predef(E)),
     [do_load_predef(Src, get_predef(P))
      || {Src, P} <- setup:find_env_vars(exometer_predefined)],
     ok.

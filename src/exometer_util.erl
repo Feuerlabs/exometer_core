@@ -72,11 +72,22 @@ timestamp_to_datetime(TS) when TS >= 0 ->
     {calendar:now_to_datetime({1258,S,0}), MS}.
 
 get_env(Key, Default) ->
-    case application:get_env(exometer, Key) of
+    case get_env1(exometer, Key) of
         {ok, Value} ->
             Value;
         _ ->
-            Default
+	    case get_env1(exometer_core, Key) of
+		{ok, CoreValue} ->
+		    CoreValue;
+		_ ->
+		    Default
+	    end
+    end.
+
+get_env1(App, Key) ->
+    case application:get_env(App, Key) of
+	{ok, undefined} -> undefined;
+	Other           -> Other
     end.
 
 get_opt(K, Opts, Default) ->

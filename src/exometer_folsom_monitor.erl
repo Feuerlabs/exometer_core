@@ -86,7 +86,7 @@ init(_) ->
 
 find_env() ->
     E1 = [E || {_, E} <- setup:find_env_vars(exometer_folsom_monitor)],
-    E2 = get_env(folsom_monitor, []),
+    E2 = exometer_util:get_env(folsom_monitor, []),
     lists:flatmap(
       fun({_,_} = M) -> [M];
 	 (L) when is_list(L) -> L
@@ -177,13 +177,6 @@ insert_hook(Type, Cs) ->
 
 cons([H|T], L) -> {cons,L,H,cons(T,L)};
 cons([]   , L) -> {nil,L}.
-
-get_env(K, Default) ->
-    case application:get_env(exometer, K) of
-	{ok, undefined} -> Default;
-	undefined       -> Default;
-	{ok, V}         -> V
-    end.
 
 check_stack(Mon, Stack, Args) ->
     orddict:fold(

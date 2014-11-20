@@ -609,7 +609,6 @@ start_reporters() ->
     call(start_reporters).
 
 do_start_reporters(S) ->
-    %% Opts = exometer_util:get_env(report, []),
     Opts = get_report_env(),
     ?info("Starting reporters with ~p~n", [ Opts ]),
     %% Dig out the mod opts.
