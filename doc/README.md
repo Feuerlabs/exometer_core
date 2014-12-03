@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Basho Technologies, Inc.  All Rights Reserved.
 
-__Version:__ Nov 20 2014 22:15:02
+__Version:__ Dec 3 2014 19:51:33
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 

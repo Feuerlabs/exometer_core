@@ -76,7 +76,9 @@
 %% registered.
 %% @end
 new(Alias, Entry, DP) when is_list(Entry), is_atom(DP), is_atom(Alias);
-			   is_list(Entry), is_atom(DP), is_binary(Alias) ->
+			   is_list(Entry), is_atom(DP), is_binary(Alias);
+                           is_list(Entry), is_integer(DP), is_atom(Alias);
+			   is_list(Entry), is_integer(DP), is_binary(Alias) ->
     gen_server:call(?MODULE, {new, Alias, Entry, DP}).
 
 -spec load(fun(() -> stat_map())) -> ok.

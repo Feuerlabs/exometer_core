@@ -438,6 +438,11 @@ and corresponds to the SYNTAX definition in the generated SNMP MIB.
 
 
 
+* `{aliases, [{DataPoint, Alias}]}` - maps aliases to datapoints.
+See [`exometer_alias:new/2`](exometer_alias.md#new-2).
+
+
+
 * `{'--', Keys}` removes option keys from the applied template.
 This can be used to clean up the options list when overriding the defaults
 for a given namespace (if the default definition contains options that are

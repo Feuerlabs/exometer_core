@@ -130,6 +130,9 @@ new(Name, Type) ->
 %% SNMP type for a given data point. `SYNTAX' needs to be a binary or a string,
 %% and corresponds to the SYNTAX definition in the generated SNMP MIB.
 %%
+%% * `{aliases, [{DataPoint, Alias}]}' - maps aliases to datapoints.
+%%   See {@link exometer_alias:new/2}.
+%%
 %% * <code>{'--', Keys}</code> removes option keys from the applied template.
 %% This can be used to clean up the options list when overriding the defaults
 %% for a given namespace (if the default definition contains options that are
@@ -1053,6 +1056,7 @@ create_entry(#exometer_entry{module = exometer,
                              type = Type} = E) when Type == counter;
 						    Type == gauge ->
     E1 = E#exometer_entry{value = 0, timestamp = exometer_util:timestamp()},
+    insert_aliases(E1),
     [ets:insert(T, E1) || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
     ok;
 
@@ -1068,6 +1072,7 @@ create_entry(#exometer_entry{module = exometer,
             E1 = E#exometer_entry{ref = {M, F}, value = 0,
                                   timestamp = exometer_util:timestamp()},
             set_call_count(M, F, ?IS_ENABLED(Status)),
+            insert_aliases(E1),
             [ets:insert(T, E1) ||
                 T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
             ok;
@@ -1084,7 +1089,6 @@ create_entry(#exometer_entry{module = Module,
 	case Module:behaviour() of
 	    probe ->
 		{probe, exometer_probe:new(Name, Type, [{ arg, Module} | Opts ]) };
-
 	    entry ->
 		{entry, Module:new(Name, Type, Opts) };
 
@@ -1092,10 +1096,12 @@ create_entry(#exometer_entry{module = Module,
 	end
     of
         {Behaviour, ok }->
+            insert_aliases(E),
             [ets:insert(T, E#exometer_entry { behaviour = Behaviour })
 	     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
             ok;
         {Behaviour, {ok, Ref}} ->
+            insert_aliases(E),
             [ets:insert(T, E#exometer_entry{ref=Ref, behaviour=Behaviour})
              || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
             ok;
@@ -1104,6 +1110,24 @@ create_entry(#exometer_entry{module = Module,
     end;
 create_entry(_Other) ->
     {error, unknown_argument}.
+
+insert_aliases(#exometer_entry{name = Name, options = Options}) ->
+    case lists:keyfind(aliases, 1, Options) of
+        {_, Aliases} ->
+            case lists:all(fun({DP, Alias}) ->
+                                   (is_atom(DP) orelse is_integer(DP))
+                                       andalso (is_atom(Alias) orelse is_binary(Alias));
+                              (_) -> false
+                           end, Aliases) of
+                true ->
+                    [exometer_alias:new(Alias, Name, DP) || {DP, Alias} <- Aliases],
+                    ok;
+                false ->
+                    erlang:error({invalid_aliases, Aliases})
+            end;
+        false ->
+            ok
+    end.
 
 set_call_count({M, F}, Bool) ->
     set_call_count(M, F, Bool).
