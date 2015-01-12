@@ -60,6 +60,8 @@
     register_application/1
    ]).
 
+-export([global_status/1]).
+
 -export([create_entry/1]).  % called only from exometer_admin.erl
 
 %% Convenience function for testing
@@ -198,7 +200,13 @@ ensure(Name, Type, Opts) when is_list(Name), is_list(Opts) ->
 %% corresponding callback module will be called. For a disabled metric,
 %% `ok' will be returned without any other action being taken.
 %% @end
-update(Name, Value) when is_list(Name) ->
+update(Name, Value) ->
+    case exometer_global:status() of
+	enabled -> update_(Name, Value);
+	_ -> ok
+    end.
+
+update_(Name, Value) when is_list(Name) ->
     case ets:lookup(Table = exometer_util:table(), Name) of
 	[#exometer_entry{status = Status} = E]
 	  when ?IS_ENABLED(Status) ->
@@ -427,7 +435,13 @@ sample(Name)  when is_list(Name) ->
 %% the exometer entry, which can be recalled using {@link info/2}, and will
 %% indicate the time that has passed since the metric was last reset.
 %% @end
-reset(Name)  when is_list(Name) ->
+reset(Name) ->
+    case exometer_global:status() of
+	enabled -> reset_(Name);
+	_ -> ok
+    end.
+
+reset_(Name)  when is_list(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
 	[#exometer_entry{status = Status} = E] when ?IS_ENABLED(Status) ->
 	    case E of
@@ -806,6 +820,28 @@ aggr_acc([{D,V}|T], Acc) ->
     end;
 aggr_acc([], Acc) ->
     Acc.
+
+global_status(St) when St==enabled; St==disabled ->
+    Prev = exometer_global:status(),
+    if St =:= Prev -> ok;
+       true ->
+	    parse_trans_mod:transform_module(
+	      exometer_global, fun(Forms,_) -> pt(Forms, St) end, [])
+    end,
+    Prev.
+
+pt(Forms, St) ->
+    parse_trans:plain_transform(
+      fun(F) ->
+	      plain_pt(F, St)
+      end, Forms).
+
+plain_pt({function, L, status, 0, [_]}, St) ->
+    {function, L, status, 0,
+     [{clause, L, [], [], [{atom, L, St}]}]};
+plain_pt(_, _) ->
+    continue.
+
 
 %% Perform variable replacement in the ets select pattern.
 %% We want to project the entries as a set of {Name, Type, Status} tuples.
