@@ -22,6 +22,7 @@
     get_statistics/3,
     get_statistics2/4,
     pick_items/2,
+    perc/2,
     histogram/1,
     histogram/2,
     drop_duplicates/1,
@@ -247,7 +248,7 @@ get_statistics2(L, Sorted, Total, Mean) ->
     Items = [{min,1}, {50, P50}, {median, P50}, {75, perc(0.75,L)},
              {90, perc(0.9,L)}, {95, perc(0.95,L)}, {99, perc(0.99,L)},
              {999, perc(0.999,L)}, {max,L}],
-    [{n,L}, {mean, Mean}, {total, Total} | pick_items(Sorted, 1, Items)].
+    [{n,L}, {mean, Mean}, {total, Total} | pick_items(Sorted, Items)].
 
 -spec pick_items([number()], [{atom() | integer(), integer()}]) ->
 			[{atom(), number()}].
