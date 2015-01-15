@@ -246,18 +246,13 @@ revsort(L) ->
     lists:sort(fun erlang:'>'/2, L).
 
 p(50, N) -> perc(0.5, N);
-p(75, N) -> perc(0.25, N);
-p(90, N) -> perc(0.1, N);
-p(95, N) -> perc(0.05, N);
-p(99, N) -> perc(0.01, N);
-p(999,N) -> perc(0.001, N).
+p(75, N) -> perc(0.75, N);
+p(90, N) -> perc(0.9, N);
+p(95, N) -> perc(0.95, N);
+p(99, N) -> perc(0.99, N);
+p(999,N) -> perc(0.999, N).
 
-perc(P, Len) when P > 1.0 ->
-    round((P / 10) * Len) + 1;
-perc(P, Len) ->
-    round(P * Len) + 1.
-
-
+perc(P, N) -> N - exometer_util:perc(P, N) + 1.
 
 add_extra(Length, L, []) ->
     {Length, L};

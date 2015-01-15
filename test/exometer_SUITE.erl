@@ -27,6 +27,7 @@
     test_update_or_create2/1,
     test_default_override/1,
     test_std_histogram/1,
+    test_slot_histogram/1,
     test_std_duration/1,
     test_folsom_histogram/1,
     test_aggregate/1,
@@ -78,6 +79,7 @@ groups() ->
      {test_histogram, [shuffle],
       [
        test_std_histogram,
+       test_slot_histogram,
        test_std_duration,
        test_folsom_histogram,
        test_aggregate,
@@ -237,6 +239,17 @@ test_std_histogram(_Config) ->
     [ok = update_(C,V) || V <- vals()],
     {_, {ok,DPs}} = timer:tc(exometer, get_value, [C]),
     [{n,134},{mean,2126866},{min,1},{max,9},{median,2},
+     {50,2},{75,3},{90,4},{95,5},{99,8},{999,9}] = scale_mean(DPs),
+    ok.
+
+test_slot_histogram(_Config) ->
+    C = [?MODULE, hist, ?LINE],
+    ok = exometer:new(C, histogram, [{histogram_module, exometer_slot_slide},
+				     {keep_high, 100},
+                                     {truncate, false}]),
+    [ok = update_(C,V) || V <- vals()],
+    {_, {ok,DPs}} = timer:tc(exometer, get_value, [C]),
+    [{n,_},{mean,2126866},{min,1},{max,9},{median,2},
      {50,2},{75,3},{90,4},{95,5},{99,8},{999,9}] = scale_mean(DPs),
     ok.
 
