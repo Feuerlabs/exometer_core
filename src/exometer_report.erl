@@ -1014,11 +1014,12 @@ handle_info({report_batch, Reporter, Name}, #st{} = St) ->
     report_batch(Reporter, Name),
     {noreply, St};
 handle_info({report, #key{reporter = Reporter} = Key, Interval}, #st{} = St) ->
+    T0 = os:timestamp(),
     case ets:member(?EXOMETER_SUBS, Key) andalso
 	get_reporter_status(Reporter) == enabled of
 	true ->
 	    case do_report(Key, Interval) of
-		true  -> restart_subscr_timer(Key, Interval);
+		true  -> restart_subscr_timer(Key, Interval, T0);
 		false -> ok
 	    end,
 	    {noreply, St};
@@ -1119,6 +1120,7 @@ do_report(#key{metric = Metric,
     end.
 
 report_batch(Reporter, Name) when is_atom(Name) ->
+    T0 = os:timestamp(),
     case ets:lookup(?EXOMETER_REPORTERS, Reporter) of
 	[#reporter{status = disabled}] ->
 	    false;
@@ -1132,7 +1134,7 @@ report_batch(Reporter, Name) when is_atom(Name) ->
 	      fun(#subscriber{key = Key}) ->
 		      do_report(Key, Name)
 	      end, Entries),
-	    restart_batch_timer(Name, R);
+	    restart_batch_timer(Name, R, T0);
 	[] ->
 	    false
     end.
@@ -1149,19 +1151,19 @@ cancel_subscr_timers(Reporter) ->
 					       _ = '_'},
 				    _ = '_'}, [], ['$_']}])).
 
-restart_subscr_timer(Key, Interval) when is_integer(Interval) ->
-    TRef = erlang:send_after(Interval, self(),
+restart_subscr_timer(Key, Interval, T0) when is_integer(Interval) ->
+    TRef = erlang:send_after(adjust_interval(Interval, T0), self(),
 			     {report, Key, Interval}),
     ets:update_element(?EXOMETER_SUBS, Key,
 		       [{#subscriber.t_ref, TRef}]);
-restart_subscr_timer(_, _) ->
+restart_subscr_timer(_, _, _) ->
     true.
 
 restart_batch_timer(Name, #reporter{name = Reporter,
-				    intervals = Ints}) when is_list(Ints) ->
+				    intervals = Ints}, T0) when is_list(Ints) ->
     case lists:keyfind(Name, #interval.name, Ints) of
 	#interval{time = Time} = I ->
-	    TRef = erlang:send_after(Time, self(),
+	    TRef = erlang:send_after(adjust_interval(Time, T0), self(),
 				     batch_timer_msg(Reporter, Name)),
 	    ets:update_element(?EXOMETER_REPORTERS, Reporter,
 			       [{#reporter.intervals,
@@ -1170,6 +1172,10 @@ restart_batch_timer(Name, #reporter{name = Reporter,
 	false ->
 	    false
     end.
+
+adjust_interval(Time, T0) ->
+    T1 = os:timestamp(),
+    erlang:max(0, Time - (timer:now_diff(T1, T0) div 1000)).
 
 cancel_timer(undefined) ->
     false;
