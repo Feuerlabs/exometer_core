@@ -697,11 +697,11 @@ start_interval_timer(#interval{name = Name, delay = Delay,
     end.
 
 do_start_interval_timer(#interval{name = Name, time = Time} = I, R) ->
-    TRef = erlang:send_after(Time, self(), batch_timer_msg(R, Name)),
+    TRef = erlang:send_after(Time, self(), batch_timer_msg(R, Name, Time)),
     I#interval{t_ref = TRef}.
 
-batch_timer_msg(R, Name) ->
-    {report_batch, R, Name}.
+batch_timer_msg(R, Name, Time) ->
+    {report_batch, R, Name, Time, os:timestamp()}.
 
 get_report_env() ->
     Opts0 = exometer_util:get_env(report, []),
@@ -1011,23 +1011,20 @@ handle_info({start_interval, Reporter, Name}, #st{} = St) ->
 handle_info({report_batch, Reporter, Name}, #st{} = St) ->
     %% Find all entries where reporter is Reporter and interval is Name,
     %% and report them.
-    report_batch(Reporter, Name),
+    report_batch(Reporter, Name, os:timestamp()),
     {noreply, St};
-handle_info({report, #key{reporter = Reporter} = Key, Interval}, #st{} = St) ->
-    T0 = os:timestamp(),
-    case ets:member(?EXOMETER_SUBS, Key) andalso
-	get_reporter_status(Reporter) == enabled of
-	true ->
-	    case do_report(Key, Interval) of
-		true  -> restart_subscr_timer(Key, Interval, T0);
-		false -> ok
-	    end,
-	    {noreply, St};
-        false ->
-            %% Possibly an unsubscribe removed the subscriber
-            ?error("No such subscriber (Key=~p)~n", [Key]),
-            {noreply, St}
-    end;
+handle_info({report_batch, Reporter, Name, Int, TS}, #st{} = St) ->
+    %% Find all entries where reporter is Reporter and interval is Name,
+    %% and report them.
+    TS1 = calc_fire_time(TS, Int),
+    report_batch(Reporter, Name, TS1),
+    {noreply, St};
+handle_info({report, #key{} = Key, Interval}, #st{} = St) ->
+    %% BW Compat. Old-style timeout msg, which doesn't include timestamp
+    {noreply, handle_report(Key, Interval, os:timestamp(), St)};
+handle_info({report, #key{} = Key, Interval, TS}, #st{} = St) ->
+    TS1 = calc_fire_time(TS, Interval),
+    {noreply, handle_report(Key, Interval, TS1, St)};
 
 handle_info({'DOWN', Ref, process, _Pid, Reason}, #st{} = S) ->
     case reporter_by_mref(Ref) of
@@ -1092,6 +1089,19 @@ resubscribe(#subscriber{key = #key{reporter = RName,
     TRef = erlang:send_after(Interval, self(), {report, Key, Interval}),
     ets:update_element(?EXOMETER_SUBS, Key, [{#subscriber.t_ref, TRef}]).
 
+handle_report(#key{reporter = Reporter} = Key, Interval, TS, #st{} = St) ->
+    _ = case ets:member(?EXOMETER_SUBS, Key) andalso
+	    get_reporter_status(Reporter) == enabled of
+	    true ->
+		case do_report(Key, Interval) of
+		    true  -> restart_subscr_timer(Key, Interval, TS);
+		    false -> ok
+		end;
+	    false ->
+		%% Possibly an unsubscribe removed the subscriber
+		?error("No such subscriber (Key=~p)~n", [Key])
+	end,
+    St.
 
 do_report(#key{metric = Metric,
 	       datapoint = DataPoint,
@@ -1119,8 +1129,7 @@ do_report(#key{metric = Metric,
 	    false
     end.
 
-report_batch(Reporter, Name) when is_atom(Name) ->
-    T0 = os:timestamp(),
+report_batch(Reporter, Name, T0) when is_atom(Name) ->
     case ets:lookup(?EXOMETER_REPORTERS, Reporter) of
 	[#reporter{status = disabled}] ->
 	    false;
@@ -1153,7 +1162,7 @@ cancel_subscr_timers(Reporter) ->
 
 restart_subscr_timer(Key, Interval, T0) when is_integer(Interval) ->
     TRef = erlang:send_after(adjust_interval(Interval, T0), self(),
-			     {report, Key, Interval}),
+			     {report, Key, Interval, os:timestamp()}),
     ets:update_element(?EXOMETER_SUBS, Key,
 		       [{#subscriber.t_ref, TRef}]);
 restart_subscr_timer(_, _, _) ->
@@ -1163,8 +1172,9 @@ restart_batch_timer(Name, #reporter{name = Reporter,
 				    intervals = Ints}, T0) when is_list(Ints) ->
     case lists:keyfind(Name, #interval.name, Ints) of
 	#interval{time = Time} = I ->
-	    TRef = erlang:send_after(adjust_interval(Time, T0), self(),
-				     batch_timer_msg(Reporter, Name)),
+	    T1 = adjust_interval(Time, T0),
+	    TRef = erlang:send_after(T1, self(),
+				     batch_timer_msg(Reporter, Name, T1)),
 	    ets:update_element(?EXOMETER_REPORTERS, Reporter,
 			       [{#reporter.intervals,
 				 lists:keyreplace(Name, #interval.name, Ints,
@@ -1175,7 +1185,16 @@ restart_batch_timer(Name, #reporter{name = Reporter,
 
 adjust_interval(Time, T0) ->
     T1 = os:timestamp(),
-    erlang:max(0, Time - (timer:now_diff(T1, T0) div 1000)).
+    erlang:max(0, Time - tdiff(T1, T0)).
+
+tdiff(T1, T0) ->
+    timer:now_diff(T1, T0) div 1000.
+
+%% Calculate time when timer should have fired, based on timestamp logged
+%% at send_after/3 and the intended interval (in ms).
+calc_fire_time({M,S,U}, Int) ->
+    {M, S, U + (Int*1000)}.
+
 
 cancel_timer(undefined) ->
     false;
@@ -1376,7 +1395,7 @@ subscribe_(Reporter, Metric, DataPoint, Interval, RetryFailedMetrics,
 			   t_ref = maybe_send_after(Status, Key, Interval)}).
 
 maybe_send_after(enabled, Key, Interval) when is_integer(Interval) ->
-    erlang:send_after(Interval, self(), {report, Key, Interval});
+    erlang:send_after(Interval, self(), {report, Key, Interval, os:timestamp()});
 maybe_send_after(_, _, _) ->
     undefined.
 
