@@ -701,7 +701,16 @@ do_start_interval_timer(#interval{name = Name, time = Time} = I, R) ->
     I#interval{t_ref = TRef}.
 
 batch_timer_msg(R, Name, Time) ->
-    {report_batch, R, Name, Time, os:timestamp()}.
+    batch_timer_msg(R, Name, Time, os:timestamp()).
+
+batch_timer_msg(R, Name, Time, TS) ->
+    {report_batch, R, Name, Time, TS}.
+
+subscr_timer_msg(Key, Interval) ->
+    subscr_timer_msg(Key, Interval, os:timestamp()).
+
+subscr_timer_msg(Key, Interval, TS) ->
+    {report, Key, Interval, TS}.
 
 get_report_env() ->
     Opts0 = exometer_util:get_env(report, []),
@@ -1086,7 +1095,8 @@ resubscribe(#subscriber{key = #key{reporter = RName,
 			interval = Interval}) ->
     try_send(RName, {exometer_subscribe, Metric, DataPoint, Interval, Extra}),
     cancel_timer(OldTRef),
-    TRef = erlang:send_after(Interval, self(), {report, Key, Interval}),
+    TRef = erlang:send_after(Interval, self(),
+			     subscr_timer_msg(Key, Interval)),
     ets:update_element(?EXOMETER_SUBS, Key, [{#subscriber.t_ref, TRef}]).
 
 handle_report(#key{reporter = Reporter} = Key, Interval, TS, #st{} = St) ->
@@ -1162,7 +1172,7 @@ cancel_subscr_timers(Reporter) ->
 
 restart_subscr_timer(Key, Interval, T0) when is_integer(Interval) ->
     TRef = erlang:send_after(adjust_interval(Interval, T0), self(),
-			     {report, Key, Interval, os:timestamp()}),
+			     subscr_timer_msg(Key, Interval, T0)),
     ets:update_element(?EXOMETER_SUBS, Key,
 		       [{#subscriber.t_ref, TRef}]);
 restart_subscr_timer(_, _, _) ->
@@ -1172,9 +1182,9 @@ restart_batch_timer(Name, #reporter{name = Reporter,
 				    intervals = Ints}, T0) when is_list(Ints) ->
     case lists:keyfind(Name, #interval.name, Ints) of
 	#interval{time = Time} = I ->
-	    T1 = adjust_interval(Time, T0),
-	    TRef = erlang:send_after(T1, self(),
-				     batch_timer_msg(Reporter, Name, T1)),
+	    TRef = erlang:send_after(
+		     adjust_interval(Time, T0), self(),
+		     batch_timer_msg(Reporter, Name, Time, T0)),
 	    ets:update_element(?EXOMETER_REPORTERS, Reporter,
 			       [{#reporter.intervals,
 				 lists:keyreplace(Name, #interval.name, Ints,
@@ -1395,7 +1405,8 @@ subscribe_(Reporter, Metric, DataPoint, Interval, RetryFailedMetrics,
 			   t_ref = maybe_send_after(Status, Key, Interval)}).
 
 maybe_send_after(enabled, Key, Interval) when is_integer(Interval) ->
-    erlang:send_after(Interval, self(), {report, Key, Interval, os:timestamp()});
+    erlang:send_after(
+      Interval, self(), subscr_timer_msg(Key, Interval));
 maybe_send_after(_, _, _) ->
     undefined.
 
