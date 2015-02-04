@@ -1541,7 +1541,7 @@ reporter_init(Reporter, Opts) ->
 reporter_loop(Module, St) ->
     NSt = receive
               {exometer_report, Metric, DataPoint, Extra, Value } ->
-                  case Module:exometer_report(Metric, DataPoint, Extra, Value, St) of
+                  case Module:exometer_report(Metric, DataPoint, Value, Extra, St) of
                       {ok, St1} -> {ok, St1};
                       _ -> {ok, St}
                   end;
