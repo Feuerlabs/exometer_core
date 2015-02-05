@@ -216,7 +216,7 @@
 -callback exometer_init(options()) -> callback_result().
 
 -callback exometer_report(metric(), datapoint(),
-                          value(), extra(), mod_state()) ->
+                          extra(), value(), mod_state()) ->
     callback_result().
 
 -callback exometer_subscribe(metric(), datapoint(),
