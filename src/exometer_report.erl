@@ -1092,12 +1092,14 @@ resubscribe(#subscriber{key = #key{reporter = RName,
 				   datapoint = DataPoint,
 				   extra = Extra} = Key,
 			t_ref = OldTRef,
-			interval = Interval}) ->
+			interval = Interval}) when is_integer(Interval) ->
     try_send(RName, {exometer_subscribe, Metric, DataPoint, Interval, Extra}),
     cancel_timer(OldTRef),
     TRef = erlang:send_after(Interval, self(),
 			     subscr_timer_msg(Key, Interval)),
-    ets:update_element(?EXOMETER_SUBS, Key, [{#subscriber.t_ref, TRef}]).
+    ets:update_element(?EXOMETER_SUBS, Key, [{#subscriber.t_ref, TRef}]);
+
+resubscribe(_) -> undefined.
 
 handle_report(#key{reporter = Reporter} = Key, Interval, TS, #st{} = St) ->
     _ = case ets:member(?EXOMETER_SUBS, Key) andalso
