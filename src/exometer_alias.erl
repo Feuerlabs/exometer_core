@@ -75,11 +75,13 @@
 %% type, and returns `{error, exists}' if the alias has already been
 %% registered.
 %% @end
-new(Alias, Entry, DP) when is_list(Entry), is_atom(DP), is_atom(Alias);
-			   is_list(Entry), is_atom(DP), is_binary(Alias);
-                           is_list(Entry), is_integer(DP), is_atom(Alias);
-			   is_list(Entry), is_integer(DP), is_binary(Alias) ->
-    gen_server:call(?MODULE, {new, Alias, Entry, DP}).
+new(Alias, Entry, DP) ->
+    case valid_arg(Alias, Entry, DP) of
+        true ->
+            gen_server:call(?MODULE, {new, Alias, Entry, DP});
+        false ->
+            {error, invalid}
+    end.
 
 -spec load(fun(() -> stat_map())) -> ok.
 %% @doc Load a list of mappings between entry+datapoint pairs and aliases.
@@ -425,18 +427,98 @@ to_key(A) when is_binary(A) ->
 
 do_load(F) ->
     Map = F(),
+    check_map(Map),
     lists:foreach(
       fun({Entry, DPs}) when is_list(Entry), is_list(DPs) ->
 	      lists:foreach(
 		fun({DP, Alias}) when is_atom(DP), is_atom(Alias);
 				      is_atom(DP), is_binary(Alias) ->
 			Key = to_key(Alias),
-			ets:insert(?TAB, #alias{key = Key,
-						alias = Alias,
-						entry = Entry,
-						dp = DP})
+			true = ets:insert_new(?TAB, #alias{key = Key,
+                                                           alias = Alias,
+                                                           entry = Entry,
+                                                           dp = DP})
 		end, DPs)
       end, Map).
+
+check_map(Map) ->
+    case lists:foldl(
+           fun(F, {M1,Es}) ->
+                   F(M1, Es)
+           end, {Map, []}, [fun check_args/2,
+                            fun check_duplicates/2,
+                            fun check_existing/2]) of
+        {Map1, []} ->
+            Map1;
+        {_, Errors} ->
+            error({map_error, Errors})
+    end.
+
+check_args(Map, Es) ->
+    Check = deep_fold(
+              fun({Alias, Entry, DP}, D) ->
+                      case valid_arg(Alias, Entry, DP) of
+                          true -> D;
+                          false ->
+                              orddict:append(Alias, {Entry, DP}, D)
+                      end;
+                 (Other, D) ->
+                      orddict:append(unrecognized, Other, D)
+              end, orddict:new(), Map),
+    maybe_add_errors(Check, invalid, Map, Es).
+
+check_duplicates(Map, Es) ->
+    Check = deep_fold(
+              fun({Alias, Entry, DP}, D) ->
+                      dict:append(Alias, {Entry,DP}, D);
+                 (_, D) ->
+                      D
+              end, dict:new(), Map),
+    %% We have duplicates if the value of any dict item is a list of length > 1.
+    Dups = dict:fold(fun(K, [_,_|_] = V, Acc) -> [{K, V}|Acc];
+                        (_, _, Acc) -> Acc
+                     end, [], Check),
+    maybe_add_errors(Dups, duplicate_aliases, Map, Es).
+
+check_existing(Map, Es) ->
+    Check = deep_fold(
+              fun({Alias, Entry, DP}, Acc) ->
+                      %% Accept identical entries
+                      case resolve(Alias) of
+                          {Entry, DP} -> Acc;
+                          error       -> Acc;
+                          {OtherEntry, OtherDP} ->
+                              orddict:append(Alias, {OtherEntry, OtherDP}, Acc)
+                      end;
+                 (_, D) ->
+                      D
+              end, orddict:new(), Map),
+    maybe_add_errors(Check, existing_aliases, Map, Es).
+
+valid_arg(Alias, Entry, DP)
+  when is_list(Entry), is_atom(DP), is_atom(Alias);
+       is_list(Entry), is_atom(DP), is_binary(Alias);
+       is_list(Entry), is_integer(DP), is_atom(Alias);
+       is_list(Entry), is_integer(DP), is_binary(Alias) -> true;
+valid_arg(_, _, _) ->
+    false.
+
+
+maybe_add_errors([], _, Map, Es) -> {Map, Es};
+maybe_add_errors([_|_] = NewErrors, Kind, Map, Es) ->
+    {Map, [{Kind, NewErrors}|Es]}.
+
+deep_fold(F, Acc, Map) ->
+    lists:foldl(
+      fun({Entry, DPs}, Acc1) ->
+              lists:foldl(
+                fun({DP, Alias}, Acc2) ->
+                        F({Alias, Entry, DP}, Acc2)
+                end, Acc1, DPs);
+         (Other, Acc1) ->
+              %% Bad input, but let's pass it on to the check function
+              F(Other, Acc1)
+      end, Acc, Map).
 
 do_unload(F) ->
     Map = F(),
