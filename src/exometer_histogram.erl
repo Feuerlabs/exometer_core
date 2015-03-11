@@ -295,7 +295,12 @@ probe_setopts(_Entry, _Opts, _St)  ->
 probe_update(Value, ?OLDSTATE = St) ->
     probe_update(Value, convert(St));
 probe_update(Value, St) ->
-    {ok, update_int(exometer_util:timestamp(), Value, St)}.
+    if is_number(Value) ->
+	    {ok, update_int(exometer_util:timestamp(), Value, St)};
+       true ->
+	    %% ignore
+	    {ok, St}
+    end.
 
 update_int(Timestamp, Value, #st{slide = Slide,
 				 histogram_module = Module,
