@@ -12,20 +12,20 @@
 -module(exometer_shallowtree).
 
 -export([new/1,
-	 insert/3,
-	 take_min/1,
-	 to_list/1,
-	 filter/2,
-	 size/1,
-	 limit/1]).
+         insert/3,
+         take_min/1,
+         to_list/1,
+         filter/2,
+         size/1,
+         limit/1]).
 
 -export([fill/1, fill1/2]).
 
 -export_type([tree/0]).
 
 -record(t, {size  = 0,
-	    limit = 10,
-	    tree  = []}).
+            limit = 10,
+            tree  = []}).
 
 -type tree() :: #t{}.
 
@@ -52,11 +52,11 @@ limit(#t{limit = L}) ->
 %% @end
 insert(K, V, #t{size = X, limit = X, tree = Tr} = T) when is_number(K) ->
     case K =< element(1, Tr) of
-	true ->
-	    T;
-	false ->
-	    {_, _, Tr1} = take_min_(Tr),
-	    T#t{tree = insert_(K, V, Tr1)}
+        true ->
+            T;
+        false ->
+            {_, _, Tr1} = take_min_(Tr),
+            T#t{tree = insert_(K, V, Tr1)}
     end;
 insert(K, V, #t{size = Sz, tree = Tr} = T) when is_number(K) ->
     T#t{size = Sz+1, tree = insert_(K, V, Tr)}.
@@ -71,9 +71,9 @@ insert_(K, V, T ) -> meld(mknode(K, V), T).
 %% @end
 take_min(#t{size = Sz, tree = Tr} = T) ->
     case take_min_(Tr) of
-	error -> error;
-	{K, V, Tr1} ->
-	    {K, V, T#t{size = Sz-1, tree = Tr1}}
+        error -> error;
+        {K, V, Tr1} ->
+            {K, V, T#t{size = Sz-1, tree = Tr1}}
     end.
 
 take_min_([]) -> error;
@@ -99,16 +99,16 @@ filter(F, #t{tree = T}) -> filter_(F, [T]).
 filter_(_, []) -> [];
 filter_(F, [{K,V,_,L,R}|T]) ->
     case F(K,V) of false -> filter_(F, [L,R|T]);
-	{true, Keep} -> [Keep|filter_(F, [L,R|T])]
+        {true, Keep} -> [Keep|filter_(F, [L,R|T])]
     end;
 filter_(F, [[]|T]) -> filter_(F, T).
 
 meld({K1,V1, _, L1, R1} = T1, {K2,V2, _, L2, R2} = T2) ->
     case K1 < K2 of
-	true ->
-	    mknode(K1,V1, L1, meld(R1, T2));
-	false ->
-	    mknode(K2,V2, L2, meld(R2, T1))
+        true ->
+            mknode(K1,V1, L1, meld(R1, T2));
+        false ->
+            mknode(K2,V2, L2, meld(R2, T1))
     end;
 meld([], T2) -> T2;
 meld(T1, []) -> T1;

@@ -66,7 +66,7 @@
 -export([start/0, stop/0]).
 
 -export_type([name/0, type/0, options/0, status/0, behaviour/0,
-	      entry/0, datapoint/0]).
+              entry/0, datapoint/0]).
 
 -compile(inline).
 
@@ -203,38 +203,38 @@ ensure(Name, Type, Opts) when is_list(Name), is_list(Opts) ->
 %% @end
 update(Name, Value) when is_list(Name) ->
     case ets:lookup(Table = exometer_util:table(), Name) of
-	[#exometer_entry{status = Status} = E]
-	  when ?IS_ENABLED(Status) ->
-	    case E of
-		#exometer_entry{module = ?MODULE, type = counter} ->
+        [#exometer_entry{status = Status} = E]
+          when ?IS_ENABLED(Status) ->
+            case E of
+                #exometer_entry{module = ?MODULE, type = counter} ->
                     ets:update_counter(
                       Table, Name, {#exometer_entry.value, Value});
-		#exometer_entry{module = ?MODULE,
-				type = fast_counter, ref = {M, F}} ->
+                #exometer_entry{module = ?MODULE,
+                                type = fast_counter, ref = {M, F}} ->
                     fast_incr(Value, M, F);
-		#exometer_entry{module = ?MODULE, type = gauge} ->
-		    ets:update_element(
-		      ?EXOMETER_ENTRIES,
-		      Name, [{#exometer_entry.value, Value}]);
-		#exometer_entry{behaviour = probe,
-				type = T, ref = Pid} ->
+                #exometer_entry{module = ?MODULE, type = gauge} ->
+                    ets:update_element(
+                      ?EXOMETER_ENTRIES,
+                      Name, [{#exometer_entry.value, Value}]);
+                #exometer_entry{behaviour = probe,
+                                type = T, ref = Pid} ->
                     exometer_probe:update(Name, Value, T, Pid);
-		#exometer_entry{module = M, behaviour = entry,
-				type = Type, ref = Ref} ->
-		    M:update(Name, Value, Type, Ref)
-	    end,
-	    update_ok(Status, E, Value);
+                #exometer_entry{module = M, behaviour = entry,
+                                type = Type, ref = Ref} ->
+                    M:update(Name, Value, Type, Ref)
+            end,
+            update_ok(Status, E, Value);
         [] ->
             {error, not_found};
-	_ ->
-	    ok
+        _ ->
+            ok
     end.
 
 update_ok(St, #exometer_entry{name = Name}, Value)
   when St band 2#10 =:= 2#10 ->
     try exometer_event ! {updated, Name, Value}
     catch
-	_:_ -> ok
+        _:_ -> ok
     end;
 update_ok(_, _, _) ->
     ok.
@@ -251,24 +251,24 @@ update_ok(_, _, _) ->
 %% @end
 update_or_create(Name, Value) ->
     case update(Name, Value) of
-	{error, not_found} ->
-	    case exometer_admin:auto_create_entry(Name) of
-		ok ->
-		    update(Name, Value);
-		Error ->
-		    Error
-	    end;
-	ok ->
-	    ok
+        {error, not_found} ->
+            case exometer_admin:auto_create_entry(Name) of
+                ok ->
+                    update(Name, Value);
+                Error ->
+                    Error
+            end;
+        ok ->
+            ok
     end.
 
 update_or_create(Name, Value, Type, Opts) ->
     case update(Name, Value) of
-	{error, not_found} ->
-	    ensure(Name, Type, Opts),
-	    update(Name, Value);
-	ok ->
-	    ok
+        {error, not_found} ->
+            ensure(Name, Type, Opts),
+            update(Name, Value);
+        ok ->
+            ok
     end.
 
 fast_incr(N, M, F) when N > 0 ->
@@ -292,7 +292,7 @@ get_value(Name) when is_list(Name) ->
     get_value(Name, default).
 
 -spec get_value(name(), datapoint() | [datapoint()]) ->
-		       {ok, value()} | {error, not_found}.
+                       {ok, value()} | {error, not_found}.
 
 get_value(Name, DataPoint) when is_list(Name), is_integer(DataPoint) ->
     get_value(Name, [DataPoint]);
@@ -317,21 +317,21 @@ get_value_(#exometer_entry{ status = Status }, _DataPoints)
 %% If the value is cached, see if we can find it.
 %% In the default case, call again with resolved data points.
 get_value_(#exometer_entry{cache = Cache } = E,
-	   DataPoints) when Cache =/= 0 ->
+           DataPoints) when Cache =/= 0 ->
     get_cached_value_(E, DataPoints);
 
 get_value_(#exometer_entry{ module = ?MODULE,
-			    type = Type} = E, default)
+                            type = Type} = E, default)
   when Type == counter; Type == fast_counter; Type == gauge ->
     get_value_(E, exometer_util:get_datapoints(E));
 
 get_value_(#exometer_entry{ module = ?MODULE,
-			    type = counter} = E, DataPoints0) ->
+                            type = counter} = E, DataPoints0) ->
     DataPoints = datapoints(DataPoints0, E),
     [get_ctr_datapoint(E, D) || D <- DataPoints];
 
 get_value_(#exometer_entry{ module = ?MODULE,
-			    type = gauge, name = Name}, DataPoints0) ->
+                            type = gauge, name = Name}, DataPoints0) ->
     [E] = ets:lookup(?EXOMETER_ENTRIES, Name),
     DataPoints = datapoints(DataPoints0, E),
     [get_gauge_datapoint(E, D) || D <- DataPoints];
@@ -342,16 +342,16 @@ get_value_(#exometer_entry{module = ?MODULE,
     [get_fctr_datapoint(E, D) || D <- DataPoints ];
 
 get_value_(#exometer_entry{behaviour = entry,
-			   module = Mod,
-			   name = Name,
-			   type = Type,
-			   ref = Ref} = E, DataPoints0) ->
+                           module = Mod,
+                           name = Name,
+                           type = Type,
+                           ref = Ref} = E, DataPoints0) ->
     Mod:get_value(Name, Type, Ref, datapoints(DataPoints0, E));
 
 get_value_(#exometer_entry{behaviour = probe,
-			   name = Name,
-			   type = Type,
-			   ref = Ref} = E, DataPoints0) ->
+                           name = Name,
+                           type = Type,
+                           ref = Ref} = E, DataPoints0) ->
 
     exometer_probe:get_value(Name, Type, Ref, datapoints(DataPoints0, E)).
 
@@ -360,21 +360,21 @@ get_cached_value_(E, default) ->
     get_cached_value_(E, exometer_util:get_datapoints(E));
 
 get_cached_value_(#exometer_entry{name = Name,
-				 cache = CacheTTL } = E,
-		 DataPoints) ->
+                                  cache = CacheTTL } = E,
+                  DataPoints) ->
 
     %% Dig through all the data points and check for cache hit.
     %% Store all cached KV pairs, and all keys that must be
     %% read and cached.
     { Cached, Uncached } =
-	lists:foldr(fun(DataPoint, {Cached1, Uncached1}) ->
-			    case exometer_cache:read(Name, DataPoint) of
-				not_found ->
-				    { Cached1, [DataPoint | Uncached1] };
-				{_, Value } ->
-				    { [{ DataPoint, Value } | Cached1], Uncached1 }
-			    end
-		    end, {[],[]}, DataPoints),
+        lists:foldr(fun(DataPoint, {Cached1, Uncached1}) ->
+                            case exometer_cache:read(Name, DataPoint) of
+                                not_found ->
+                                    { Cached1, [DataPoint | Uncached1] };
+                                {_, Value } ->
+                                    { [{ DataPoint, Value } | Cached1], Uncached1 }
+                            end
+                    end, {[],[]}, DataPoints),
 
     %% Go through all cache misses and retreive their actual values.
     Result = get_value_(E#exometer_entry { cache = 0 }, Uncached),
@@ -402,20 +402,20 @@ delete(Name) when is_list(Name) ->
 %% @end
 sample(Name)  when is_list(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
-	[#exometer_entry{status = Status} = E] when ?IS_ENABLED(Status) ->
-	    case E of
-		#exometer_entry{module = ?MODULE, type = counter} -> ok;
-		#exometer_entry{module = ?MODULE, type = fast_counter} -> ok;
-		#exometer_entry{behaviour = probe,
-				type = Type,
-				ref = Ref} ->
-		    exometer_probe:sample(Name, Type, Ref),
-		    ok;
-		#exometer_entry{behaviour = entry,
-				module = M, type = Type, ref = Ref} ->
-		    M:sample(Name, Type, Ref)
-	    end;
-	[_] -> disabled;
+        [#exometer_entry{status = Status} = E] when ?IS_ENABLED(Status) ->
+            case E of
+                #exometer_entry{module = ?MODULE, type = counter} -> ok;
+                #exometer_entry{module = ?MODULE, type = fast_counter} -> ok;
+                #exometer_entry{behaviour = probe,
+                                type = Type,
+                                ref = Ref} ->
+                    exometer_probe:sample(Name, Type, Ref),
+                    ok;
+                #exometer_entry{behaviour = entry,
+                                module = M, type = Type, ref = Ref} ->
+                    M:sample(Name, Type, Ref)
+            end;
+        [_] -> disabled;
         [] ->
             {error, not_found}
     end.
@@ -432,42 +432,42 @@ sample(Name)  when is_list(Name) ->
 %% @end
 reset(Name)  when is_list(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
-	[#exometer_entry{status = Status} = E] when ?IS_ENABLED(Status) ->
-	    case E of
-		#exometer_entry{module = ?MODULE, type = counter} ->
-		    TS = exometer_util:timestamp(),
-		    [ets:update_element(T, Name, [{#exometer_entry.value, 0},
-						  {#exometer_entry.timestamp, TS}])
-		     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
-		    ok;
-		#exometer_entry{module = ?MODULE, type = fast_counter,
-				ref = {M, F}} ->
-		    TS = exometer_util:timestamp(),
-		    set_call_count(M, F, true),
-		    [ets:update_element(T, Name, [{#exometer_entry.timestamp, TS}])
-		     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
-		    ok;
-		#exometer_entry{module = ?MODULE, type = gauge} ->
-		    TS = exometer_util:timestamp(),
-		    [ets:update_element(T, Name, [{#exometer_entry.value, 0},
-						  {#exometer_entry.timestamp, TS}])
-		     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
-		    ok;
-		#exometer_entry{behaviour = probe, type = Type, ref = Ref} ->
-		    [exometer_cache:delete(Name, DataPoint) ||
-			DataPoint <- exometer_util:get_datapoints(E)],
-		    exometer_probe:reset(Name, Type, Ref),
-		    ok;
-		#exometer_entry{behaviour = entry,
-				module = M, type = Type, ref = Ref} ->
-		    [exometer_cache:delete(Name, DataPoint) ||
-			DataPoint <- exometer_util:get_datapoints(E)],
-		    M:reset(Name, Type, Ref)
-	    end;
-	[] ->
+        [#exometer_entry{status = Status} = E] when ?IS_ENABLED(Status) ->
+            case E of
+                #exometer_entry{module = ?MODULE, type = counter} ->
+                    TS = exometer_util:timestamp(),
+                    [ets:update_element(T, Name, [{#exometer_entry.value, 0},
+                                                  {#exometer_entry.timestamp, TS}])
+                     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
+                    ok;
+                #exometer_entry{module = ?MODULE, type = fast_counter,
+                                ref = {M, F}} ->
+                    TS = exometer_util:timestamp(),
+                    set_call_count(M, F, true),
+                    [ets:update_element(T, Name, [{#exometer_entry.timestamp, TS}])
+                     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
+                    ok;
+                #exometer_entry{module = ?MODULE, type = gauge} ->
+                    TS = exometer_util:timestamp(),
+                    [ets:update_element(T, Name, [{#exometer_entry.value, 0},
+                                                  {#exometer_entry.timestamp, TS}])
+                     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
+                    ok;
+                #exometer_entry{behaviour = probe, type = Type, ref = Ref} ->
+                    [exometer_cache:delete(Name, DataPoint) ||
+                        DataPoint <- exometer_util:get_datapoints(E)],
+                    exometer_probe:reset(Name, Type, Ref),
+                    ok;
+                #exometer_entry{behaviour = entry,
+                                module = M, type = Type, ref = Ref} ->
+                    [exometer_cache:delete(Name, DataPoint) ||
+                        DataPoint <- exometer_util:get_datapoints(E)],
+                    M:reset(Name, Type, Ref)
+            end;
+        [] ->
             {error, not_found};
-	_ ->
-	    ok
+        _ ->
+            ok
     end.
 
 
@@ -490,29 +490,29 @@ setopts(Name, Options) when is_list(Name), is_list(Options) ->
         [#exometer_entry{module = ?MODULE,
                          type = Type,
                          status = Status} = E] ->
-	    if ?IS_DISABLED(Status) ->
+            if ?IS_DISABLED(Status) ->
                     case lists:keyfind(status, 1, Options) of
                         {_, enabled} ->
-			    case Type of
-				fast_counter -> setopts_fctr(E, Options);
-				counter      -> setopts_ctr(E, Options);
-				gauge        -> setopts_gauge(E, Options)
+                            case Type of
+                                fast_counter -> setopts_fctr(E, Options);
+                                counter      -> setopts_ctr(E, Options);
+                                gauge        -> setopts_gauge(E, Options)
                             end,
                             reporter_setopts(E, Options, enabled);
                         _ ->
                             {error, disabled}
                     end;
-	       ?IS_ENABLED(Status) ->
+               ?IS_ENABLED(Status) ->
                     case lists:keyfind(status, 1, Options) of
                         {_, disabled} ->
                             {_, Elems} = process_setopts(E, Options),
                             update_entry_elems(Name, Elems),
                             reporter_setopts(E, Options, disabled);
                         R when R==false; R=={status,disabled} ->
-			    case Type of
-				fast_counter -> setopts_fctr(E, Options);
-				counter      -> setopts_ctr(E, Options);
-				gauge        -> setopts_gauge(E, Options)
+                            case Type of
+                                fast_counter -> setopts_fctr(E, Options);
+                                counter      -> setopts_ctr(E, Options);
+                                gauge        -> setopts_gauge(E, Options)
                             end,
                             reporter_setopts(E, Options, enabled)
                     end
@@ -541,7 +541,7 @@ module_setopts(#exometer_entry{behaviour = probe}=E, Options, NewStatus) ->
     exometer_probe:setopts(E, Options, NewStatus);
 
 module_setopts(#exometer_entry{behaviour = entry,
-			       module=M} = E, Options, NewStatus) ->
+                               module=M} = E, Options, NewStatus) ->
     case [O || {K, _} = O <- Options,
                not lists:member(K, [status, cache, ref])] of
         [] ->
@@ -626,25 +626,25 @@ info(#exometer_entry{} = E, Item) ->
 info(Name, Item) ->
     case ets:lookup(exometer_util:table(), Name) of
         [#exometer_entry{} = E] ->
-	    info_(E, Item);
+            info_(E, Item);
         _ ->
             undefined
     end.
 
 info_(E, Item) ->
     case Item of
-	name      -> E#exometer_entry.name;
-	type      -> E#exometer_entry.type;
-	module    -> E#exometer_entry.module;
-	value     -> get_value_(E,[]);
-	cache     -> E#exometer_entry.cache;
-	status    -> info_status(E#exometer_entry.status);
-	timestamp -> E#exometer_entry.timestamp;
-	options   -> E#exometer_entry.options;
-	ref       -> E#exometer_entry.ref;
-	entry     -> E;
-	datapoints-> exometer_util:get_datapoints(E);
-	_ -> undefined
+        name      -> E#exometer_entry.name;
+        type      -> E#exometer_entry.type;
+        module    -> E#exometer_entry.module;
+        value     -> get_value_(E,[]);
+        cache     -> E#exometer_entry.cache;
+        status    -> info_status(E#exometer_entry.status);
+        timestamp -> E#exometer_entry.timestamp;
+        options   -> E#exometer_entry.options;
+        ref       -> E#exometer_entry.ref;
+        entry     -> E;
+        datapoints-> exometer_util:get_datapoints(E);
+        _ -> undefined
     end.
 
 info_status(S) when ?IS_ENABLED(S) ->
@@ -666,12 +666,12 @@ datapoints(D, _) when is_list(D) ->
 info(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
         [#exometer_entry{} = E0] ->
-	    E = info_set_status(E0),
+            E = info_set_status(E0),
             Flds = record_info(fields, exometer_entry),
             lists:keyreplace(value, 1,
                              lists:zip(Flds, tl(tuple_to_list(E))) ++
                                  [ {datapoints,
-				    exometer_util:get_datapoints(E)}],
+                                    exometer_util:get_datapoints(E)}],
                              {value, get_value_(E, [])});
         _ ->
             undefined
@@ -699,8 +699,8 @@ find_entries(Path) ->
                [ { #exometer_entry{name = Pat, _ = '_'}, [],
                    [{{ {element, #exometer_entry.name, '$_'},
                        {element, #exometer_entry.type, '$_'},
-		       status_body_pattern()
-		     }}] } ]).
+                       status_body_pattern()
+                     }}] } ]).
 
 get_values(Path) ->
     Entries = find_entries(Path),
@@ -781,9 +781,9 @@ select_cont(Cont) ->
 %% @end
 aggregate(Pattern, DataPoints) ->
     case aggr_select(Pattern) of
-	[] -> [];
-	Found ->
-	    aggregate(Found, DataPoints, orddict:new())
+        [] -> [];
+        Found ->
+            aggregate(Found, DataPoints, orddict:new())
     end.
 
 aggr_select(Pattern) ->
@@ -791,21 +791,21 @@ aggr_select(Pattern) ->
 
 aggregate([N|Ns], DPs, Acc) when is_list(N) ->
     case get_value(N, DPs) of
-	{ok, Vals} ->
-	    aggregate(Ns, DPs, aggr_acc(Vals, Acc));
-	_ ->
-	    aggregate(Ns, DPs, Acc)
+        {ok, Vals} ->
+            aggregate(Ns, DPs, aggr_acc(Vals, Acc));
+        _ ->
+            aggregate(Ns, DPs, Acc)
     end;
 aggregate([], _, Acc) ->
     Acc.
 
 aggr_acc([{D,V}|T], Acc) ->
     if is_integer(V) ->
-	    aggr_acc(T, orddict:update(D, fun(Val) ->
-						  Val + V
-					  end, V, Acc));
+            aggr_acc(T, orddict:update(D, fun(Val) ->
+                                                  Val + V
+                                          end, V, Acc));
        true ->
-	    aggr_acc(T, Acc)
+            aggr_acc(T, Acc)
     end;
 aggr_acc([], Acc) ->
     Acc.
@@ -864,27 +864,27 @@ g_subst(Ks) ->
 %% Potentially save Name, Type and Status match head patterns
 match_tail(N,T,S) ->
     case is_dollar(N) of true ->
-	    [{N, {element,#exometer_entry.name,'$_'}}|match_tail(T,S)];
-	false -> match_tail(T, S)
+            [{N, {element,#exometer_entry.name,'$_'}}|match_tail(T,S)];
+        false -> match_tail(T, S)
     end.
 match_tail(T,S) ->
     case is_dollar(T) of true ->
-	    [{T, {element,#exometer_entry.type,'$_'}}|match_tail(S)];
-	false -> match_tail(S)
+            [{T, {element,#exometer_entry.type,'$_'}}|match_tail(S)];
+        false -> match_tail(S)
     end.
 match_tail(S) ->
     case is_dollar(S) of true ->
-	    [{S, status_element_pattern(S)}];
-	false -> []
+            [{S, status_element_pattern(S)}];
+        false -> []
     end.
 
 is_dollar(A) when is_atom(A) ->
     case atom_to_list(A) of
-	[$$ | Rest] ->
-	    try _ = list_to_integer(Rest), true
-	    catch error:_ -> false
-	    end;
-	_ -> false
+        [$$ | Rest] ->
+            try _ = list_to_integer(Rest), true
+            catch error:_ -> false
+            end;
+        _ -> false
     end;
 is_dollar(_) -> false.
 
@@ -892,8 +892,8 @@ is_dollar(_) -> false.
 g_subst_({_,_}=X) -> X;
 g_subst_(K) when is_atom(K) ->
     {K, {{{element,#exometer_entry.name,'$_'},
-	  {element,#exometer_entry.type,'$_'},
-	  status_element_pattern({element,#exometer_entry.status,'$_'})}}}.
+          {element,#exometer_entry.type,'$_'},
+          status_element_pattern({element,#exometer_entry.status,'$_'})}}}.
 
 
 %% The status attribute: bit 1 indicates enabled (1) or disabled (0)
@@ -904,7 +904,7 @@ status_element_pattern(S) ->
 status_body_pattern() ->
     {element,
      {'+',{'band',
-	   {element,#exometer_entry.status,'$_'},1},1},
+           {element,#exometer_entry.status,'$_'},1},1},
      {{disabled,enabled}}}.
 
 p_subst(Ks) ->
@@ -913,7 +913,7 @@ p_subst_({_,_}=X) -> X;
 p_subst_(K) when is_atom(K) ->
     {K, {{{element,#exometer_entry.name,'$_'},
           {element,#exometer_entry.type,'$_'},
-	  status_body_pattern()}}}.
+          status_body_pattern()}}}.
 
 %% This function returns a list of elements for ets:update_element/3,
 %% to be used for updating the #exometer_entry{} instances.
@@ -937,48 +937,48 @@ process_setopts_(#exometer_entry{options = OldOpts} = Entry, Options) ->
           fun
               ({cache, Val},
                {#exometer_entry{cache = Cache0} = E, Elems} = Acc) ->
-                  if is_integer(Val), Val >= 0 ->
-                         if Val =/= Cache0 ->
-                                {E#exometer_entry{cache = Val},
-                                 add_elem(cache, Val, Elems)};
-                            true ->
-                                Acc
-                         end;
-                     true -> error({illegal, {cache, Val}})
-                  end;
+                           if is_integer(Val), Val >= 0 ->
+                                   if Val =/= Cache0 ->
+                                           {E#exometer_entry{cache = Val},
+                                            add_elem(cache, Val, Elems)};
+                                      true ->
+                                           Acc
+                                   end;
+                              true -> error({illegal, {cache, Val}})
+                           end;
               ({status, Status}, {#exometer_entry{status = Status0} = E, Elems} = Acc) ->
-		  case is_status_change(Status, Status0) of
-		      {true, Status1} ->
-			  {E#exometer_entry{status = Status1},
-			   add_elem(status, Status1, Elems)};
-		      false ->
-			  Acc
-                  end;
-	      ({update_event, UE},
-	       {#exometer_entry{status = Status0} = E, Elems} = Acc)
-		when is_boolean(UE) ->
-		  case (exometer_util:test_event_flag(update, Status0) == UE) of
-		      true -> Acc;
-		      false ->
-			  %% value changed
-			  if UE ->
-				  Status = exometer_util:set_event_flag(
-					     update, E#exometer_entry.status),
-				  {E#exometer_entry{status = Status},
-				   add_elem(status, Status, Elems)};
-			     true ->
-				  Status = exometer_util:clear_event_flag(
-					     update, E#exometer_entry.status),
-				  {E#exometer_entry{status = Status},
-				   add_elem(status, Status, Elems)}
-			  end
-		  end;
-	      ({ref,R}, {E, Elems}) ->
-                  {E#exometer_entry{ref = R}, add_elem(ref, R, Elems)};
+                           case is_status_change(Status, Status0) of
+                               {true, Status1} ->
+                                   {E#exometer_entry{status = Status1},
+                                    add_elem(status, Status1, Elems)};
+                               false ->
+                                   Acc
+                           end;
+              ({update_event, UE},
+               {#exometer_entry{status = Status0} = E, Elems} = Acc)
+          when is_boolean(UE) ->
+                           case (exometer_util:test_event_flag(update, Status0) == UE) of
+                               true -> Acc;
+                               false ->
+                                   %% value changed
+                                   if UE ->
+                                           Status = exometer_util:set_event_flag(
+                                                      update, E#exometer_entry.status),
+                                           {E#exometer_entry{status = Status},
+                                            add_elem(status, Status, Elems)};
+                                      true ->
+                                           Status = exometer_util:clear_event_flag(
+                                                      update, E#exometer_entry.status),
+                                           {E#exometer_entry{status = Status},
+                                            add_elem(status, Status, Elems)}
+                                   end
+                           end;
+              ({ref,R}, {E, Elems}) ->
+                           {E#exometer_entry{ref = R}, add_elem(ref, R, Elems)};
               ({_,_}, Acc) ->
-                  Acc
-          end, {Entry, []}, Options),
-        {E1, [{#exometer_entry.options, update_opts(Options, OldOpts)}|Elems]}.
+                           Acc
+                   end, {Entry, []}, Options),
+    {E1, [{#exometer_entry.options, update_opts(Options, OldOpts)}|Elems]}.
 
 is_status_change(enabled, St) ->
     if ?IS_ENABLED(St) -> false;
@@ -1021,7 +1021,7 @@ type_arg_first(Opts) ->
 %% the exometer record itself.
 get_ctr_datapoint(#exometer_entry{name = Name}, value) ->
     {value, lists:sum([ets:lookup_element(T, Name, #exometer_entry.value)
-		       || T <- exometer_util:tables()])};
+                       || T <- exometer_util:tables()])};
 get_ctr_datapoint(#exometer_entry{timestamp = TS}, ms_since_reset) ->
     {ms_since_reset, exometer_util:timestamp() - TS};
 get_ctr_datapoint(#exometer_entry{}, Undefined) ->
@@ -1054,7 +1054,7 @@ get_fctr_datapoint(#exometer_entry{ }, Undefined) ->
 
 create_entry(#exometer_entry{module = exometer,
                              type = Type} = E) when Type == counter;
-						    Type == gauge ->
+                                                    Type == gauge ->
     E1 = E#exometer_entry{value = 0, timestamp = exometer_util:timestamp()},
     insert_aliases(E1),
     [ets:insert(T, E1) || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
@@ -1084,21 +1084,21 @@ create_entry(#exometer_entry{module = exometer,
 create_entry(#exometer_entry{module = Module,
                              type = Type,
                              name = Name,
-			     options = Opts} = E) ->
+                             options = Opts} = E) ->
     case
-	case Module:behaviour() of
-	    probe ->
-		{probe, exometer_probe:new(Name, Type, [{ arg, Module} | Opts ]) };
-	    entry ->
-		{entry, Module:new(Name, Type, Opts) };
+        case Module:behaviour() of
+            probe ->
+                {probe, exometer_probe:new(Name, Type, [{ arg, Module} | Opts ]) };
+            entry ->
+                {entry, Module:new(Name, Type, Opts) };
 
-	    Other -> Other
-	end
+            Other -> Other
+        end
     of
         {Behaviour, ok }->
             insert_aliases(E),
             [ets:insert(T, E#exometer_entry { behaviour = Behaviour })
-	     || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
+             || T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
             ok;
         {Behaviour, {ok, Ref}} ->
             insert_aliases(E),
@@ -1140,10 +1140,10 @@ set_call_count(M, F, Bool) when is_atom(M), is_atom(F), is_boolean(Bool) ->
 %%
 register_application() ->
     case application:get_application() of
-	{ok, App} ->
-	    register_application(App);
-	Other ->
-	    {error, Other}
+        {ok, App} ->
+            register_application(App);
+        Other ->
+            {error, Other}
     end.
 
 -spec register_application(_Application::atom()) -> ok | error().

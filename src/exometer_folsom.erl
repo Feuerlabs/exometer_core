@@ -12,7 +12,7 @@
 -behaviour(exometer_entry).
 
 -export([behaviour/0,
-	 new/3,
+         new/3,
          delete/3,
          get_datapoints/3,
          get_value/4,
@@ -47,8 +47,8 @@ new(Name, duration, Opts) ->
     {folsom_metrics:new_duration(Name), opt_ref(Opts)};
 new(Name, history, Opts) ->
     case lists:keyfind(size, 1, Opts) of
-	{_, Sz} -> {folsom_metrics:new_history(Name, Sz), opt_ref(Opts)};
-	false   -> {folsom_metrics:new_history(Name), opt_ref(Opts)}
+        {_, Sz} -> {folsom_metrics:new_history(Name, Sz), opt_ref(Opts)};
+        false   -> {folsom_metrics:new_history(Name), opt_ref(Opts)}
     end.
 
 
@@ -81,30 +81,30 @@ reset(_, _, _) ->
 
 get_value(Name, history, _Ref, DataPoints0) ->
     try  DataPoints = datapoints(history, DataPoints0),
-	 lists:foldr(
-	   fun(events, Acc) ->
-		   [{events, just_events(
-			       folsom_metrics_history:get_events(Name))}
-		    | Acc];
-	      (values, Acc) ->
-		   [{values, folsom_metrics_history:get_events(Name)}
-		    | Acc];
-	      (timed_events, Acc) ->
-		   [{timed_events,
-		     timed_events(
-		       folsom_metrics_history:get_events(Name))}
-		    | Acc];
-		 (Sz, Acc) when is_integer(Sz), Sz > 0 ->
-		      [{Sz, just_events(
-			      folsom_metrics_history:get_events(Name, Sz))}
-		       | Acc];
-		 (info, Acc) ->
-		      [{info, folsom_metrics_history:get_value(Name)}
-		       | Acc];
-		 (_, Acc) -> Acc
-	      end, [], DataPoints)
+         lists:foldr(
+           fun(events, Acc) ->
+                   [{events, just_events(
+                               folsom_metrics_history:get_events(Name))}
+                    | Acc];
+              (values, Acc) ->
+                   [{values, folsom_metrics_history:get_events(Name)}
+                    | Acc];
+              (timed_events, Acc) ->
+                   [{timed_events,
+                     timed_events(
+                       folsom_metrics_history:get_events(Name))}
+                    | Acc];
+              (Sz, Acc) when is_integer(Sz), Sz > 0 ->
+                   [{Sz, just_events(
+                           folsom_metrics_history:get_events(Name, Sz))}
+                    | Acc];
+              (info, Acc) ->
+                   [{info, folsom_metrics_history:get_value(Name)}
+                    | Acc];
+              (_, Acc) -> Acc
+           end, [], DataPoints)
     catch
-	error:_ -> unavailable
+        error:_ -> unavailable
     end;
 get_value(Name, Type, Ref, DataPoints) ->
     Trunc = get_trunc_opt(Ref),

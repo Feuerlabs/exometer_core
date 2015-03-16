@@ -177,7 +177,7 @@
 -export([new/2, new/4, new/5,
          add_element/2,
          add_element/3,
-	 add_element/4,
+         add_element/4,
          reset/1,
          to_list/1,
          foldl/3,
@@ -265,7 +265,7 @@ add_element(TS, Val, #slide{cur_slot = CurrentSlot,
     %% Invoke the sample MFA to get a new state to work with
     %%
     ret(Wrap, Flag,
-	Slide1#slide {cur_state = SampleF(TS, Val, Slide1#slide.cur_state)}).
+        Slide1#slide {cur_state = SampleF(TS, Val, Slide1#slide.cur_state)}).
 
 ret(false, _, Slide) ->
     Slide;
@@ -313,8 +313,8 @@ foldr(Fun, Acc, Slide) ->
 %% within the timespan ranging from Oldest up to the current timme.
 %%
 take_since(Oldest, #slide{%% cur_slot = CurrentSlot,
-                          cur_state = CurrentState,
-                          slot_period = SlotPeriod } =Slide) ->
+                      cur_state = CurrentState,
+                      slot_period = SlotPeriod } =Slide) ->
 
     %% Check if we need to add a slot for the current time period
     %% before we start to grab data.
@@ -325,9 +325,9 @@ take_since(Oldest, #slide{%% cur_slot = CurrentSlot,
     #slide { list1 = List1,
              list2 = List2} =
         %% if TSSlot =/= CurrentSlot, CurrentState =/= undefined ->
-	if CurrentState =/= undefined ->
+        if CurrentState =/= undefined ->
                 {_, Sl} = add_slot(TS, Slide),
-		Sl;
+                Sl;
            true ->
                 Slide
         end,
@@ -368,7 +368,7 @@ add_slot(TS, #slide{timespan = TimeSpan,
         undefined ->  %% Transformation function could not produce an element
             %% Reset the time slot to the current slot. Reset state./
             {false, Slide#slide{ cur_slot = TSSlot,
-				 cur_state = undefined}};
+                                 cur_state = undefined}};
 
         %% The transform function produced an element to store
         Element ->
@@ -380,16 +380,16 @@ add_slot(TS, #slide{timespan = TimeSpan,
                     %% Shift list1 into list2.
                     %% Add the new slot as the initial element of list1
                     {true, Slide#slide{ list1 = [{ CurrentSlot, Element }],
-					list2 = List1,
-					list1_start_slot = CurrentSlot,
-					cur_slot = TSSlot,
-					cur_state = undefined}};
+                                        list2 = List1,
+                                        list1_start_slot = CurrentSlot,
+                                        cur_slot = TSSlot,
+                                        cur_state = undefined}};
                true ->
                     %% No shift necessary. Tack on the new slot to list1.
                     {false,
-		     Slide#slide{list1 = [{CurrentSlot, Element} | List1],
-				 cur_slot = TSSlot,
-				 cur_state = undefined}}
+                     Slide#slide{list1 = [{CurrentSlot, Element} | List1],
+                                 cur_slot = TSSlot,
+                                 cur_state = undefined}}
             end
     end.
 

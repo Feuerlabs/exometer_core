@@ -74,7 +74,7 @@ spawn_process(Name, F) when is_function(F,0) ->
     Parent = self(),
     proc_lib:spawn(fun() ->
                            exometer_admin:monitor(Name, self()),
-			   init(Name, Mod, F, Parent)
+                           init(Name, Mod, F, Parent)
                    end).
 
 init(Name, Mod, StartF, ParentPid) ->
@@ -201,8 +201,8 @@ format_status(Opt, StatusData) ->
                       pid_to_list(Name);
                  is_atom(Name) ->
                       Name;
-		 true ->
-		      lists:flatten(io_lib:fwrite("~w", [Name]))
+                 true ->
+                      lists:flatten(io_lib:fwrite("~w", [Name]))
               end,
     Header = lists:concat(["Status for exometer_proc ", NameTag]),
     Log = sys:get_debug(log, Debug, []),

@@ -18,29 +18,29 @@
 
 -export([copy_folsom/3]).
 -export([behaviour/0,
-	 delete/3,
-	 get_datapoints/3,
-	 get_value/4,
-	 new/3,
-	 reset/3,
-	 sample/3,
-	 setopts/3,
-	 update/4]).
+         delete/3,
+         get_datapoints/3,
+         get_value/4,
+         new/3,
+         reset/3,
+         sample/3,
+         setopts/3,
+         update/4]).
 
 behaviour() ->
     entry.
 
 copy_folsom(Name, Type, Opts) when is_tuple(Name) ->
     {tuple_to_list(Name), ad_hoc, [{folsom_name, Name},
-				   {module, ?MODULE},
-				   {type, Type}
-				   | options(Type, Opts)]};
+                                   {module, ?MODULE},
+                                   {type, Type}
+                                   | options(Type, Opts)]};
 copy_folsom(_, _, _) ->
     false.
 
 new(N, _, Opts) ->
     {ok, {proplists:get_value(type, Opts, unknown),
-	  proplists:get_value(folsom_name, Opts, N)}}.
+          proplists:get_value(folsom_name, Opts, N)}}.
 
 update(_, Value, counter, {_, Name}) ->
     folsom_metrics:notify_existing_metric(Name, {inc,Value}, counter);
