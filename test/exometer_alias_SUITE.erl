@@ -68,11 +68,11 @@ end_per_suite(_Config) ->
     ok.
 
 init_per_testcase(Case, Config) ->
-    exometer:start(),
-    Config.
+    {ok, StartedApps} = application:ensure_all_started(exometer_core),
+    [{started_apps, StartedApps} | Config].
 
 end_per_testcase(_Case, Config) ->
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok.
 
 %%%===================================================================
