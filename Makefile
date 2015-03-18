@@ -43,4 +43,5 @@ clean_plt:
 	rm -f $(EXOMETER_PLT)
 
 dialyzer: deps compile $(EXOMETER_PLT)
-	dialyzer -r ebin --plt $(EXOMETER_PLT) $(DIALYZER_OPTS)
+	dialyzer -r ebin --plt $(EXOMETER_PLT) $(DIALYZER_OPTS) | \
+	fgrep -v -f ./dialyzer.ignore-warnings
