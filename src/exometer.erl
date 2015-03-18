@@ -205,8 +205,8 @@ ensure(Name, Type, Opts) when is_list(Name), is_list(Opts) ->
 %% @end
 update(Name, Value) ->
     case exometer_global:status() of
-	enabled -> update_(Name, Value);
-	_ -> ok
+        enabled -> update_(Name, Value);
+        _ -> ok
     end.
 
 update_(Name, Value) when is_list(Name) ->
@@ -440,8 +440,8 @@ sample(Name)  when is_list(Name) ->
 %% @end
 reset(Name) ->
     case exometer_global:status() of
-	enabled -> reset_(Name);
-	_ -> ok
+        enabled -> reset_(Name);
+        _ -> ok
     end.
 
 reset_(Name)  when is_list(Name) ->
@@ -828,15 +828,15 @@ global_status(St) when St==enabled; St==disabled ->
     Prev = exometer_global:status(),
     if St =:= Prev -> ok;
        true ->
-	    parse_trans_mod:transform_module(
-	      exometer_global, fun(Forms,_) -> pt(Forms, St) end, [])
+            parse_trans_mod:transform_module(
+              exometer_global, fun(Forms,_) -> pt(Forms, St) end, [])
     end,
     Prev.
 
 pt(Forms, St) ->
     parse_trans:plain_transform(
       fun(F) ->
-	      plain_pt(F, St)
+              plain_pt(F, St)
       end, Forms).
 
 plain_pt({function, L, status, 0, [_]}, St) ->
