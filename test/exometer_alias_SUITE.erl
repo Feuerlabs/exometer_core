@@ -68,7 +68,7 @@ end_per_suite(_Config) ->
     ok.
 
 init_per_testcase(Case, Config) ->
-    {ok, StartedApps} = application:ensure_all_started(exometer_core),
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     [{started_apps, StartedApps} | Config].
 
 end_per_testcase(_Case, Config) ->

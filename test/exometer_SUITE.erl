@@ -119,18 +119,18 @@ init_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:set_env(stdlib, exometer_predefined, {script, "../../test/data/test_defaults.script"}),
-    {ok, StartedApps} = application:ensure_all_started(exometer_core),
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     [{started_apps, StartedApps} | Config];
 init_per_testcase(test_app_predef, Config) ->
     compile_app1(Config),
-    {ok, StartedApps} = application:ensure_all_started(exometer_core),
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     Scr = filename:join(filename:dirname(
-			  filename:absname(?config(data_dir, Config))),
-			"data/app1.script"),
+                          filename:absname(?config(data_dir, Config))),
+                        "data/app1.script"),
     ok = application:set_env(app1, exometer_predefined, {script, Scr}),
     [{started_apps, StartedApps} | Config];
 init_per_testcase(_Case, Config) ->
-    {ok, StartedApps} = application:ensure_all_started(exometer_core),
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     [{started_apps, StartedApps} | Config].
 
 end_per_testcase(Case, Config) when
