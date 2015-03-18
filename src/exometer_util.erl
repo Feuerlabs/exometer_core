@@ -59,7 +59,7 @@ timestamp() ->
     (MS-1258)*1000000000 + S*1000 + US div 1000.
 
 -spec timestamp_to_datetime(timestamp()) ->
-				   {calendar:datetime(), non_neg_integer()}.
+                                   {calendar:datetime(), non_neg_integer()}.
 %% @doc Convert timestamp to a regular datetime.
 %%
 %% The timestamp is expected
@@ -77,18 +77,18 @@ get_env(Key, Default) ->
         {ok, Value} ->
             Value;
         _ ->
-	    case get_env1(exometer_core, Key) of
-		{ok, CoreValue} ->
-		    CoreValue;
-		_ ->
-		    Default
-	    end
+            case get_env1(exometer_core, Key) of
+                {ok, CoreValue} ->
+                    CoreValue;
+                _ ->
+                    Default
+            end
     end.
 
 get_env1(App, Key) ->
     case application:get_env(App, Key) of
-	{ok, undefined} -> undefined;
-	Other           -> Other
+        {ok, undefined} -> undefined;
+        Other           -> Other
     end.
 
 get_opt(K, Opts, Default) ->
@@ -183,15 +183,15 @@ drop_duplicates(List0) when is_list(List0) ->
     List1 = lists:foldl(
               fun
                   (Elem, Acc) when is_tuple(Elem) ->
-                      case lists:keymember(element(1, Elem), 1, Acc) of
-                          true ->
-                              Acc;
-                          false ->
-                              [Elem | Acc]
-                      end;
+                               case lists:keymember(element(1, Elem), 1, Acc) of
+                                   true ->
+                                       Acc;
+                                   false ->
+                                       [Elem | Acc]
+                               end;
                   (_, Acc) ->
-                      Acc
-              end, [], List0),
+                               Acc
+                       end, [], List0),
     lists:reverse(List1);
 drop_duplicates(Any) ->
     Any.
@@ -207,7 +207,7 @@ histogram(Values, default) ->
 histogram(Values, DataPoints) ->
     H = histogram(Values),
     [DP || {K,_} = DP <- H,
-	   lists:member(K, DataPoints)].
+           lists:member(K, DataPoints)].
 
 -spec get_statistics(Length::non_neg_integer(),
                      Total::non_neg_integer(),
@@ -251,7 +251,7 @@ get_statistics2(L, Sorted, Total, Mean) ->
     [{n,L}, {mean, Mean}, {total, Total} | pick_items(Sorted, Items)].
 
 -spec pick_items([number()], [{atom() | integer(), integer()}]) ->
-			[{atom(), number()}].
+                        [{atom(), number()}].
 %% @doc Pick values from specified positions in a sorted list of numbers.
 %%
 %% This function is used to extract datapoints (usually percentiles) from
@@ -305,16 +305,16 @@ key_match(_, _)   -> false.
 
 
 get_datapoints(#exometer_entry{module = exometer,
-			       type = T}) when T==counter;
+                               type = T}) when T==counter;
                                                T==fast_counter;
                                                T==gauge ->
     [value, ms_since_reset];
 get_datapoints(#exometer_entry{behaviour = entry,
-			       name = Name, module = M,
-			       type = Type, ref = Ref}) ->
+                               name = Name, module = M,
+                               type = Type, ref = Ref}) ->
     M:get_datapoints(Name, Type, Ref);
 get_datapoints(#exometer_entry{behaviour = probe,
-			       name = Name, type = Type, ref = Ref}) ->
+                               name = Name, type = Type, ref = Ref}) ->
     exometer_probe:get_datapoints(Name, Type, Ref).
 
 set_call_count({M, F}, Bool) ->
@@ -327,9 +327,9 @@ get_status(enabled) -> enabled;
 get_status(disabled) -> disabled;
 get_status(St) when is_integer(St) ->
     if St band 2#1 == 1 ->
-	    enabled;
+            enabled;
        true ->
-	    disabled
+            disabled
     end.
 
 set_status(enabled , enabled ) -> 1;

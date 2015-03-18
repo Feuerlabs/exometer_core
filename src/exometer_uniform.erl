@@ -14,7 +14,7 @@
 
 %% exometer_probe callbacks
 -export([behaviour/0,
-	 probe_init/3,
+         probe_init/3,
          probe_terminate/1,
          probe_get_value/2,
          probe_get_datapoints/1,
@@ -67,9 +67,9 @@ probe_terminate(ModSt) ->
 
 probe_get_value(DataPoints, St) ->
     {Length, Total, Lst} = ets:foldl(
-			     fun(#elem { val = Val }, {Length, Total, List}) ->
-				     { Length + 1, Total + Val, [ Val | List ]}  end,
-			     {0, 0.0, []}, St#st.ets_ref),
+                             fun(#elem { val = Val }, {Length, Total, List}) ->
+                                     { Length + 1, Total + Val, [ Val | List ]}  end,
+                             {0, 0.0, []}, St#st.ets_ref),
 
     Sorted = lists:sort(Lst),
     Mean = case Length of
@@ -124,9 +124,9 @@ process_opts(St, Options) ->
           %% Unknown option, pass on to State options list, replacing
           %% any earlier versions of the same option.
           ({Opt, Val}, St1) ->
-              St1#st{ opts = [ {Opt, Val}
-                               | lists:keydelete(Opt, 1, St1#st.opts) ] }
-      end, St, Options).
+                       St1#st{ opts = [ {Opt, Val}
+                                        | lists:keydelete(Opt, 1, St1#st.opts) ] }
+               end, St, Options).
 
 
 probe_handle_msg(_, S) ->

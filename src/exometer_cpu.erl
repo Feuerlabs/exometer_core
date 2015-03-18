@@ -49,7 +49,7 @@ probe_init(_, _, Opts) ->
 probe_terminate(_) -> ok.
 
 probe_get_value(DPs, #st{data = Data0,
-                    datapoints = DPs0} = S) ->
+                         datapoints = DPs0} = S) ->
     Data1 = if Data0 == undefined -> sample(DPs0);
                true -> Data0
             end,
