@@ -111,50 +111,49 @@ init_per_testcase(Case, Config) when
       Case == test_folsom_histogram;
       Case == test_history1_folsom;
       Case == test_history4_folsom ->
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     application:start(bear),
     application:start(folsom),
-    exometer:start(),
-    Config;
+    [{started_apps, StartedApps} | Config];
 init_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:set_env(stdlib, exometer_predefined, {script, "../../test/data/test_defaults.script"}),
-    ok = application:start(setup),
-    exometer:start(),
-    Config;
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    [{started_apps, StartedApps} | Config];
 init_per_testcase(test_app_predef, Config) ->
     compile_app1(Config),
-    exometer:start(),
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     Scr = filename:join(filename:dirname(
-			  filename:absname(?config(data_dir, Config))),
-			"data/app1.script"),
+                          filename:absname(?config(data_dir, Config))),
+                        "data/app1.script"),
     ok = application:set_env(app1, exometer_predefined, {script, Scr}),
-    Config;
+    [{started_apps, StartedApps} | Config];
 init_per_testcase(_Case, Config) ->
-    exometer:start(),
-    Config.
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    [{started_apps, StartedApps} | Config].
 
-end_per_testcase(Case, _Config) when
+end_per_testcase(Case, Config) when
       Case == test_folsom_histogram;
       Case == test_history1_folsom;
       Case == test_history4_folsom ->
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     folsom:stop(),
     application:stop(bear),
     ok;
-end_per_testcase(Case, _Config) when
+end_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:unset_env(common_test, exometer_predefined),
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok = application:stop(setup),
     ok;
-end_per_testcase(test_app_predef, _Config) ->
+end_per_testcase(test_app_predef, Config) ->
     ok = application:stop(app1),
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok;
-end_per_testcase(_Case, _Config) ->
-    exometer:stop(),
+end_per_testcase(_Case, Config) ->
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok.
 
 %%%===================================================================
