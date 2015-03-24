@@ -146,7 +146,12 @@ do_load_predef(Src, L) when is_list(L) ->
                    (Other) ->
                         lager:error("Predef(~p): ~p~n",
                                     [Src, {bad_pattern,Other}])
-                end, Found)
+                end, Found);
+         ({aliases, Aliases}) ->
+              lists:foreach(
+                fun({Alias, Entry, DP}) ->
+                        exometer_alias:new(Alias, Entry, DP)
+                end, Aliases)
       end, L).
 
 predef_delete_entry(Key, Src) ->
