@@ -423,6 +423,12 @@ Exometer Core defaults can be changed either through OTP application environment
 variables or through the use of Basho's `cuttlefish'
 ([https://github.com/basho/cuttlefish]).
 
+<b>Note:</b> Exometer Core will check both the `exometer' and the `exometer_core'
+application environments. The `exometer' environment overrides the
+`exometer_core' environment. However, if only `exometer_core' is used, any
+`exometer' environment will simply be ignored. This is because of the
+application controller: environment data is not loaded until the application
+in question is loaded.
 
 === Configuring type - entry maps ===
 
