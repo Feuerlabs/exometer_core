@@ -160,6 +160,7 @@
     set_interval/3,
     delete_interval/2,
     restart_intervals/1,
+    trigger_interval/2,
     get_intervals/1,
     remove_reporter/1, remove_reporter/2,
     terminate_reporter/1,
@@ -268,7 +269,7 @@
 
 -record(interval, {
           name      :: atom(),
-          time = 0  :: non_neg_integer(),
+          time = 0  :: non_neg_integer() | 'manual',
           delay = 0 :: non_neg_integer(),
           t_ref     :: reference() | undefined
          }).
@@ -426,12 +427,15 @@ list_subscriptions(Reporter) ->
 %% `{intervals, [named_interval()]}'
 %% named_interval() :: {Name::atom(), Interval::pos_integer()}
 %%                   | {Name::atom(), Interval::time_ms(), delay()::time_ms()}
+%%                   | {Name::atom(), 'manual'}
 %% Define named intervals. The name can be used by subscribers, so that all
 %% subsriptions for a given named interval will be reported when the interval
 %% triggers. An optional delay (in ms) can be given: this will cause the first
 %% interval to start in `Delay' milliseconds. When all intervals are named
 %% at the same time, the delay parameter can be used to achieve staggered
-%% reporting.
+%% reporting. If the interval is specified as ```'manual'''', it will have
+%% to be triggered manually using {@link trigger_interval/2}.
+%%
 %% @end
 add_reporter(Reporter, Options) ->
     call({add_reporter, Reporter, Options}).
@@ -447,7 +451,9 @@ remove_reporter(Reporter) ->
 %%
 %% See {@link add_reporter/2} for a description of named intervals.
 %% The named interval is here specified as either `Time' (milliseconds) or
-%% `{Time, Delay}', where a delay in milliseconds is provided.
+%% `{Time, Delay}', where a delay in milliseconds is provided. It is also
+%% specify an interval as ```'manual'''', indicating that the interval can
+%% only be triggered manually via {@link trigger_interval/2}.
 %%
 %% If the named interval exists, it will be replaced with the new definition.
 %% Otherwise, it will be added. Use {@link restart_intervals/1} if you want
@@ -456,6 +462,8 @@ remove_reporter(Reporter) ->
 set_interval(Reporter, Name, Time) when is_atom(Name),
                                         is_integer(Time), Time >= 0 ->
     call({set_interval, Reporter, Name, Time});
+set_interval(Reporter, Name, manual) when is_atom(Name) ->
+    call({set_interval, Reporter, Name, manual});
 set_interval(Reporter, Name, {Time, Delay}) when is_atom(Name),
                                                  is_integer(Time), Time >= 0,
                                                  is_integer(Delay),
@@ -476,6 +484,17 @@ delete_interval(Reporter, Name) ->
 %% @end
 restart_intervals(Reporter) ->
     call({restart_intervals, Reporter}).
+
+-spec trigger_interval(reporter_name(), atom()) -> ok.
+%% @doc Trigger a named interval.
+%%
+%% This function is mainly used to trigger intervals defined as ```'manual'''',
+%% but can be used to trigger any named interval. If a named interval with
+%% a specified time in milliseconds is triggered this way, it will effectively
+%% be restarted, and will repeat as usual from that point on.
+%% @end
+trigger_interval(Reporter, Name) ->
+    cast({trigger_interval, Reporter, Name}).
 
 -spec get_intervals(reporter_name()) ->
                            [{atom(), [{time, pos_integer()}
@@ -673,6 +692,8 @@ get_interval_opts(Opts) ->
                                     is_integer(Time), Time >= 0,
                                     is_integer(Delay), Delay >= 0 ->
               #interval{name = Name, time = Time, delay = Delay};
+         ({Name, manual}) when is_atom(Name) ->
+              #interval{name = Name, time = manual};
          (Other) ->
               error({invalid_interval, Other})
       end, Is ++ Is1).
@@ -685,6 +706,8 @@ singelton_interval({N,T,D}=I) when is_atom(N),
 start_interval_timers(#reporter{name = R, intervals = Ints}) ->
     lists:map(fun(I) -> start_interval_timer(I, R) end, Ints).
 
+start_interval_timer(#interval{time = manual} = I, _) ->
+    I;
 start_interval_timer(#interval{name = Name, delay = Delay,
                                t_ref = Ref} = I, R) ->
     cancel_timer(Ref),
@@ -892,7 +915,10 @@ handle_call({set_interval, Reporter, Name, Int}, _, #st{}=St) ->
                                             is_integer(Delay), Delay >= 0 ->
                              I0#interval{time = Time, delay = Delay};
                          Time when is_integer(Time), Time >= 0 ->
-                             I0#interval{time = Time}
+                             I0#interval{time = Time};
+                         manual ->
+                             cancel_timer(I0#interval.t_ref),
+                             I0#interval{time = manual}
                      end,
                 ets:update_element(?EXOMETER_REPORTERS, Reporter,
                                    [{#reporter.intervals,
@@ -988,6 +1014,9 @@ handle_cast({disable, Pid}, #st{} = St) ->
         [] -> ok
     end,
     {noreply, St};
+handle_cast({trigger_interval, Reporter, Name}, #st{} = St) ->
+    report_batch(Reporter, Name, os:timestamp()),
+    {noreply, St};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -1004,12 +1033,14 @@ handle_info({start_interval, Reporter, Name}, #st{} = St) ->
     case ets:lookup(?EXOMETER_REPORTERS, Reporter) of
         [#reporter{intervals = Ints, status = enabled}] ->
             case lists:keyfind(Name, #interval.name, Ints) of
-                #interval{} = I ->
+                #interval{time = Time} = I when is_integer(Time) ->
                     I1 = do_start_interval_timer(I, Reporter),
                     ets:update_element(?EXOMETER_REPORTERS, Reporter,
                                        [{#reporter.intervals,
                                          lists:keyreplace(
                                            Name, #interval.name, Ints, I1)}]);
+                #interval{time = manual} ->
+                    ok;
                 false ->
                     ok
             end;
@@ -1126,10 +1157,13 @@ do_report(#key{metric = Metric,
             true;
         %% We did not find a value, but we should try again.
         {true, _ } ->
+            if is_list(Metric) ->
             ?debug("Metric(~p) Datapoint(~p) not found."
                    " Will try again in ~p msec~n",
                    [Metric, DataPoint, Interval]),
             true;
+               true -> false
+            end;
         %% We did not find a value, and we should not retry.
         _ ->
             %% Entry removed while timer in progress.
@@ -1180,7 +1214,7 @@ restart_subscr_timer(_, _, _) ->
 restart_batch_timer(Name, #reporter{name = Reporter,
                                     intervals = Ints}, T0) when is_list(Ints) ->
     case lists:keyfind(Name, #interval.name, Ints) of
-        #interval{time = Time} = I ->
+        #interval{time = Time} = I when is_integer(Time) ->
             TRef = erlang:send_after(
                      adjust_interval(Time, T0), self(),
                      batch_timer_msg(Reporter, Name, Time, T0)),
@@ -1188,6 +1222,8 @@ restart_batch_timer(Name, #reporter{name = Reporter,
                                [{#reporter.intervals,
                                  lists:keyreplace(Name, #interval.name, Ints,
                                                   I#interval{t_ref = TRef})}]);
+        #interval{time = manual} ->
+            false;
         false ->
             false
     end.
@@ -1201,6 +1237,8 @@ tdiff(T1, T0) ->
 
 %% Calculate time when timer should have fired, based on timestamp logged
 %% at send_after/3 and the intended interval (in ms).
+calc_fire_time({manual, TS}, _) ->
+    TS;
 calc_fire_time({M,S,U}, Int) ->
     {M, S, U + (Int*1000)}.
 
