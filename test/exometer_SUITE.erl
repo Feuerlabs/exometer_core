@@ -120,10 +120,12 @@ init_per_testcase(Case, Config) when
       Case == test_function_match ->
     ok = application:set_env(stdlib, exometer_predefined, {script, "../../test/data/test_defaults.script"}),
     {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    ct:log("StartedApps = ~p~n", [StartedApps]),
     [{started_apps, StartedApps} | Config];
 init_per_testcase(test_app_predef, Config) ->
     compile_app1(Config),
     {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    ct:log("StartedApps = ~p~n", [StartedApps]),
     Scr = filename:join(filename:dirname(
                           filename:absname(?config(data_dir, Config))),
                         "data/app1.script"),
@@ -131,13 +133,14 @@ init_per_testcase(test_app_predef, Config) ->
     [{started_apps, StartedApps} | Config];
 init_per_testcase(_Case, Config) ->
     {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    ct:log("StartedApps = ~p~n", [StartedApps]),
     [{started_apps, StartedApps} | Config].
 
 end_per_testcase(Case, Config) when
       Case == test_folsom_histogram;
       Case == test_history1_folsom;
       Case == test_history4_folsom ->
-    [application:stop(App) || App <- ?config(started_apps, Config)],
+    stop_started_apps(Config),
     folsom:stop(),
     application:stop(bear),
     ok;
@@ -145,16 +148,20 @@ end_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:unset_env(common_test, exometer_predefined),
-    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok = application:stop(setup),
+    stop_started_apps(Config),
     ok;
 end_per_testcase(test_app_predef, Config) ->
     ok = application:stop(app1),
-    [application:stop(App) || App <- ?config(started_apps, Config)],
+    stop_started_apps(Config),
     ok;
 end_per_testcase(_Case, Config) ->
-    [application:stop(App) || App <- ?config(started_apps, Config)],
+    stop_started_apps(Config),
     ok.
+
+stop_started_apps(Config) ->
+    [application:stop(App) ||
+        App <- lists:reverse(?config(started_apps, Config))].
 
 %%%===================================================================
 %%% Test Cases
