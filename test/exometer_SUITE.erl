@@ -23,6 +23,7 @@
     test_std_counter/1,
     test_gauge/1,
     test_fast_counter/1,
+    test_wrapping_counter/1,
     test_update_or_create/1,
     test_update_or_create2/1,
     test_default_override/1,
@@ -68,7 +69,8 @@ groups() ->
       [
         test_std_counter,
         test_gauge,
-        test_fast_counter
+        test_fast_counter,
+        test_wrapping_counter
       ]},
      {test_defaults, [shuffle],
       [
@@ -189,6 +191,25 @@ test_fast_counter(_Config) ->
     fc(),
     {ok, [{value, 2}]} = exometer:get_value(C, [value]),
     {ok, [{value, 2}, {ms_since_reset, _}]} = exometer:get_value(C),
+    ok.
+
+test_wrapping_counter(_Config) ->
+    C = [?MODULE, ctr, ?LINE],
+    ok = exometer:new(C, counter, []),
+    Max16 = 65534,
+    Max32 = 4294967294,
+    Max64 = 18446744073709551614,
+    Max64p1 = 18446744073709551615,
+    Max64p21 = 18446744073709551635,
+    ok = exometer:update(C, Max64),
+    {ok, [{value, Max64}, {value16, Max16}, {value32, Max32}, {value64, Max64}]} =
+      exometer:get_value(C, [value, value16, value32, value64]),
+    ok = exometer:update(C, 1),
+    {ok, [{value, Max64p1}, {value16, 0}, {value32, 0}, {value64, 0}]} =
+      exometer:get_value(C, [value, value16, value32, value64]),
+    [ok = exometer:update(C, 1) || _ <- lists:seq(1, 20)],
+    {ok, [{value, Max64p21}, {value16, 20}, {value32, 20}, {value64, 20}]} =
+      exometer:get_value(C, [value, value16, value32, value64]),
     ok.
 
 test_update_or_create(_Config) ->
