@@ -232,10 +232,7 @@ update(Name, Value) when is_list(Name) ->
 
 update_ok(St, #exometer_entry{name = Name}, Value)
   when St band 2#10 =:= 2#10 ->
-    try exometer_event ! {updated, Name, Value}
-    catch
-	_:_ -> ok
-    end;
+    exometer_event:notify(updated, Name, Value);
 update_ok(_, _, _) ->
     ok.
 
