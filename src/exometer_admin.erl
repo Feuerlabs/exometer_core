@@ -99,20 +99,20 @@ load_predefined() ->
 register_application(App) ->
     %% Ignore if exometer is not running
     case whereis(exometer_admin) of
-	undefined -> ok;
-	_ ->
-	    case setup:get_env(App, exometer_defaults) of
-		{ok, E} ->
-		    do_load_defaults(App, get_predef(E));
-		undefined ->
-		    ok
-	    end,
-	    case setup:get_env(App, exometer_predefined) of
-		{ok, P} ->
-		    do_load_predef(App, get_predef(P));
-		undefined ->
-		    ok
-	    end
+        undefined -> ok;
+        _ ->
+            case setup:get_env(App, exometer_defaults) of
+                {ok, E} ->
+                    do_load_defaults(App, get_predef(E));
+                undefined ->
+                    ok
+            end,
+            case setup:get_env(App, exometer_predefined) of
+                {ok, P} ->
+                    do_load_predef(App, get_predef(P));
+                undefined ->
+                    ok
+            end
     end.
 
 get_predef({script, F} ) -> ok(file:script(F, []), F);
@@ -124,36 +124,41 @@ do_load_defaults(Src, L) when is_list(L) ->
     lists:foreach(
       fun({NamePattern, Type, Spec}) ->
               try set_default(NamePattern, Type, Spec)
-	      catch
-		  error:E ->
-		      lager:error("Defaults(~p): ERROR: ~p~n", [Src, E])
-	      end
+              catch
+                  error:E ->
+                      lager:error("Defaults(~p): ERROR: ~p~n", [Src, E])
+              end
       end, L).
 
 do_load_predef(Src, L) when is_list(L) ->
     lists:foreach(
       fun({Name, Type, Options}) ->
               new_entry(Name, Type, Options);
-	 ({delete, Key}) ->
-	      predef_delete_entry(Key, Src);
-	 ({re_register, {Name, Type, Options}}) ->
-	      re_register_entry(Name, Type, Options);
-	 ({select_delete, Pat}) ->
-	      Found = exometer:select(Pat),
-	      lists:foreach(
-		fun({K,_,_}) ->
-			predef_delete_entry(K, Src);
-		   (Other) ->
-			lager:error("Predef(~p): ~p~n",
-				    [Src, {bad_pattern,Other}])
-		end, Found)
+         ({delete, Key}) ->
+              predef_delete_entry(Key, Src);
+         ({re_register, {Name, Type, Options}}) ->
+              re_register_entry(Name, Type, Options);
+         ({select_delete, Pat}) ->
+              Found = exometer:select(Pat),
+              lists:foreach(
+                fun({K,_,_}) ->
+                        predef_delete_entry(K, Src);
+                   (Other) ->
+                        lager:error("Predef(~p): ~p~n",
+                                    [Src, {bad_pattern,Other}])
+                end, Found);
+         ({aliases, Aliases}) ->
+              lists:foreach(
+                fun({Alias, Entry, DP}) ->
+                        exometer_alias:new(Alias, Entry, DP)
+                end, Aliases)
       end, L).
 
 predef_delete_entry(Key, Src) ->
     case delete_entry(Key) of
-	ok -> ok;
-	Error ->
-	    lager:error("Predef(~p): ~p~n", [Src, Error])
+        ok -> ok;
+        Error ->
+            lager:error("Predef(~p): ~p~n", [Src, Error])
     end.
 
 ok({ok, Res}, _) -> Res;
@@ -189,10 +194,10 @@ re_register_entry(Name, Type, Opts) ->
 
 repair_entry(Name) ->
     case gen_server:call(?MODULE, {repair_entry, Name}) of
-	{error, Reason} ->
-	    error(Reason);
-	ok ->
-	    ok
+        {error, Reason} ->
+            error(Reason);
+        ok ->
+            ok
     end.
 
 delete_entry(Name) ->
@@ -201,10 +206,10 @@ delete_entry(Name) ->
 ensure(Name, Type, Opts) ->
     {Type1, Opt1} = check_type_arg(Type, Opts),
     case gen_server:call(?MODULE, {ensure, Name, Type1, Opt1}) of
-	{error, Reason} ->
-	    error(Reason);
-	ok ->
-	    ok
+        {error, Reason} ->
+            error(Reason);
+        ok ->
+            ok
     end.
 
 auto_create_entry(Name) ->
@@ -230,9 +235,9 @@ demonitor(Pid) when is_pid(Pid) ->
 
 opts_to_rec(Type, Opts0) ->
     Opts = case lists:keymember(module, 1, Opts0) of
-	       true -> Opts0;
-	       false -> [{module, module(Type)}|Opts0]
-	   end,
+               true -> Opts0;
+               false -> [{module, module(Type)}|Opts0]
+           end,
     Flds = record_info(fields, exometer_entry),
     lists:foldr(fun({K,V}, Acc) ->
                         setelement(pos(K, Flds), Acc, V)
@@ -276,49 +281,49 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting}, _From, S) ->
     end;
 handle_call({repair_entry, Name}, _From, S) ->
     try
-	#exometer_entry{} = E = exometer:info(Name, entry),
-	delete_entry_(Name),
-	exometer:create_entry(E),
-	{reply, ok, S}
+        #exometer_entry{} = E = exometer:info(Name, entry),
+        delete_entry_(Name),
+        exometer:create_entry(E),
+        {reply, ok, S}
     catch
-	error:Error ->
-	    {reply, {error, Error}, S}
+        error:Error ->
+            {reply, {error, Error}, S}
     end;
 handle_call({propose, Name, Type, Opts}, _From, S) ->
     try
-	#exometer_entry{options = NewOpts} = E0 =
-	    lookup_definition(Name, Type, Opts),
-	E1 = process_opts(E0, NewOpts),
-	{reply, exometer_info:pp(E1), S}
+        #exometer_entry{options = NewOpts} = E0 =
+            lookup_definition(Name, Type, Opts),
+        E1 = process_opts(E0, NewOpts),
+        {reply, exometer_info:pp(E1), S}
     catch
-	error:Error ->
-	    {reply, {error, Error}, S}
+        error:Error ->
+            {reply, {error, Error}, S}
     end;
 handle_call({delete_entry, Name}, _From, S) ->
     {reply, delete_entry_(Name), S};
 handle_call({ensure, Name, Type, Opts}, _From, S) ->
     case ets:lookup(exometer_util:table(), Name) of
-	[#exometer_entry{type = Type}] ->
-	    {reply, ok, S};
-	[#exometer_entry{type = _OtherType}] ->
-	    {reply, {error, type_mismatch}, S};
-	[] ->
-	    #exometer_entry{options = OptsTemplate} = E0 =
-		lookup_definition(Name, Type, Opts),
-	    E1 = process_opts(E0, OptsTemplate ++ Opts),
-	    Res = exometer:create_entry(E1),
-	    report_new_entry(E1),
-	    {reply, Res, S}
+        [#exometer_entry{type = Type}] ->
+            {reply, ok, S};
+        [#exometer_entry{type = _OtherType}] ->
+            {reply, {error, type_mismatch}, S};
+        [] ->
+            #exometer_entry{options = OptsTemplate} = E0 =
+                lookup_definition(Name, Type, Opts),
+            E1 = process_opts(E0, OptsTemplate ++ Opts),
+            Res = exometer:create_entry(E1),
+            report_new_entry(E1),
+            {reply, Res, S}
     end;
 handle_call({auto_create, Name}, _From, S) ->
     case find_auto_template(Name) of
-	false ->
-	    {reply, {error, no_template}, S};
-	#exometer_entry{options = Opts} = E ->
-	    E1 = process_opts(E#exometer_entry{name = Name}, Opts),
-	    Res = exometer:create_entry(E1),
-	    report_new_entry(E1),
-	    {reply, Res, S}
+        false ->
+            {reply, {error, no_template}, S};
+        #exometer_entry{options = Opts} = E ->
+            E1 = process_opts(E#exometer_entry{name = Name}, Opts),
+            Res = exometer:create_entry(E1),
+            report_new_entry(E1),
+            {reply, Res, S}
     end;
 handle_call(_, _, S) ->
     {reply, error, S}.
@@ -363,17 +368,17 @@ terminate(_, _) ->
 
 code_change(_, S, _) ->
     case ets:info(?EXOMETER_REPORTERS, name) of
-	undefined -> create_reporter_tabs();
-	_ -> ok
+        undefined -> create_reporter_tabs();
+        _ -> ok
     end,
     {ok, S}.
 
 create_reporter_tabs() ->
     Heir = {heir, whereis(exometer_sup), []},
     ets:new(?EXOMETER_REPORTERS, [public, named_table, set,
-				  {keypos, 2}, Heir]),
+                                  {keypos, 2}, Heir]),
     ets:new(?EXOMETER_SUBS, [public, named_table, ordered_set,
-			     {keypos, 2}, Heir]).
+                             {keypos, 2}, Heir]).
 
 
 create_ets_tabs() ->
@@ -385,10 +390,10 @@ create_ets_tabs() ->
                                        {keypos, 2}]),
             ets:new(?EXOMETER_ENTRIES, [public, named_table, ordered_set,
                                         {keypos, 2}]),
-	    ets:new(?EXOMETER_REPORTERS, [public, named_table, set,
-					  {keypos, 2}]),
-	    ets:new(?EXOMETER_SUBS, [public, named_table, ordered_set,
-				     {keypos, 2}]);
+            ets:new(?EXOMETER_REPORTERS, [public, named_table, set,
+                                          {keypos, 2}]),
+            ets:new(?EXOMETER_SUBS, [public, named_table, ordered_set,
+                                     {keypos, 2}]);
         _ ->
             true
     end.
@@ -423,36 +428,36 @@ lookup_definition(Name, ad_hoc, Opts) ->
     end;
 lookup_definition(Name, Type, Opts) ->
     E = case ets:prev(?EXOMETER_SHARED, {default, Type, <<>>}) of
-	    {default, Type, N} = D0 when N==[''], N==Name ->
-		case ets:lookup(?EXOMETER_SHARED, D0) of
-		    [#exometer_entry{} = Def] ->
-			Def;
-		    [] ->
-			default_definition_(Name, Type)
-		end;
-	    {default, OtherType, _} when Type=/=OtherType ->
-		exometer_default(Name, Type);
-	    '$end_of_table' ->
-		exometer_default(Name, Type);
-	    _ ->
-		default_definition_(Name, Type)
-	end,
+            {default, Type, N} = D0 when N==[''], N==Name ->
+                case ets:lookup(?EXOMETER_SHARED, D0) of
+                    [#exometer_entry{} = Def] ->
+                        Def;
+                    [] ->
+                        default_definition_(Name, Type)
+                end;
+            {default, OtherType, _} when Type=/=OtherType ->
+                exometer_default(Name, Type);
+            '$end_of_table' ->
+                exometer_default(Name, Type);
+            _ ->
+                default_definition_(Name, Type)
+        end,
     merge_opts(Opts, E).
 
 merge_opts(Opts, #exometer_entry{options = DefOpts} = E) ->
     Opts1 = lists:foldl(fun({'--', Keys}, Acc) ->
-				case is_list(Keys) of
-				    true ->
-					lists:foldl(
-					  fun(K,Acc1) ->
-						  lists:keydelete(K, 1, Acc1)
-					  end, Acc, Keys);
-				    false ->
-					error({invalid_option,'--'})
-				end;
-			    ({K,V}, Acc) ->
-				lists:keystore(K, 1, Acc, {K,V})
-			end, DefOpts, Opts),
+                                case is_list(Keys) of
+                                    true ->
+                                        lists:foldl(
+                                          fun(K,Acc1) ->
+                                                  lists:keydelete(K, 1, Acc1)
+                                          end, Acc, Keys);
+                                    false ->
+                                        error({invalid_option,'--'})
+                                end;
+                           ({K,V}, Acc) ->
+                                lists:keystore(K, 1, Acc, {K,V})
+                        end, DefOpts, Opts),
     E#exometer_entry{options = Opts1}.
 
 default_definition_(Name, Type) ->
@@ -494,11 +499,11 @@ search_default(Name, Type) ->
 
 sort_defaults(L) ->
     lists:sort(fun comp_templates/2,
-	       [E || #exometer_entry{type = T} = E <- L,
-		     T =/= function andalso T =/= cpu]).
+               [E || #exometer_entry{type = T} = E <- L,
+                     T =/= function andalso T =/= cpu]).
 
 comp_templates(#exometer_entry{name = {default, _, A}, type = Ta},
-	       #exometer_entry{name = {default, _, B}, type = Tb}) ->
+               #exometer_entry{name = {default, _, B}, type = Tb}) ->
     comp_names(A, B, Ta, Tb).
 
 
@@ -521,10 +526,10 @@ comp_types(A, B) -> A =< B.
 %% @end
 find_auto_template(Name) ->
     case sort_defaults(ets:select(?EXOMETER_SHARED,
-				  make_patterns('_', Name))) of
-	[] -> false;
-	[#exometer_entry{name = {default,_,['']}}|_] -> false;
-	[#exometer_entry{} = E|_] -> E
+                                  make_patterns('_', Name))) of
+        [] -> false;
+        [#exometer_entry{name = {default,_,['']}}|_] -> false;
+        [#exometer_entry{} = E|_] -> E
     end.
 
 make_patterns(Type, Name) when is_list(Name) ->
@@ -568,32 +573,32 @@ process_opts(Entry, Options) ->
           %% Unknown option, pass on to exometer entry options list, replacing
           %% any earlier versions of the same option.
           ({cache, Val}, E) ->
-              if is_integer(Val), Val >= 0 ->
-                      E#exometer_entry{cache = Val};
-                 true ->
-                      error({illegal, {cache, Val}})
-              end;
+                       if is_integer(Val), Val >= 0 ->
+                               E#exometer_entry{cache = Val};
+                          true ->
+                               error({illegal, {cache, Val}})
+                       end;
           ({status, Status}, #exometer_entry{} = E) ->
-              if Status==enabled; Status==disabled ->
-		      Status1 = exometer_util:set_status(
-				  Status, Entry#exometer_entry.status),
-                      E#exometer_entry{status = Status1};
-                 true ->
-                      error({illegal, {status, Status}})
-              end;
-	  ({update_event, UE}, #exometer_entry{} = E) when is_boolean(UE) ->
-	      if UE ->
-		      Status = exometer_util:set_event_flag(
-				 update, E#exometer_entry.status),
-		      E#exometer_entry{status = Status};
-		 true ->
-		      Status = exometer_util:clear_event_flag(
-				 update, E#exometer_entry.status),
-		      E#exometer_entry{status = Status}
-	      end;
+                       if Status==enabled; Status==disabled ->
+                               Status1 = exometer_util:set_status(
+                                           Status, Entry#exometer_entry.status),
+                               E#exometer_entry{status = Status1};
+                          true ->
+                               error({illegal, {status, Status}})
+                       end;
+          ({update_event, UE}, #exometer_entry{} = E) when is_boolean(UE) ->
+                       if UE ->
+                               Status = exometer_util:set_event_flag(
+                                          update, E#exometer_entry.status),
+                               E#exometer_entry{status = Status};
+                          true ->
+                               Status = exometer_util:clear_event_flag(
+                                          update, E#exometer_entry.status),
+                               E#exometer_entry{status = Status}
+                       end;
           ({_Opt, _Val}, #exometer_entry{} = Entry1) ->
-              Entry1
-      end, Entry#exometer_entry{options = Options}, Options).
+                       Entry1
+               end, Entry#exometer_entry{options = Options}, Options).
 
 delete_entry_(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
@@ -604,34 +609,34 @@ delete_entry_(Name) ->
             ok;
         [#exometer_entry{module = exometer, type = fast_counter,
                          ref = {M, F}}] ->
-	    try
-		exometer_util:set_call_count(M, F, false)
-	    after
-		[ets:delete(T, Name) ||
-		    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
-	    end,
+            try
+                exometer_util:set_call_count(M, F, false)
+            after
+                [ets:delete(T, Name) ||
+                    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
+            end,
             ok;
         [#exometer_entry{behaviour = probe,
-			 type = Type, ref = Ref} = E] ->
-	    [ exometer_cache:delete(Name, DataPoint) ||
-		DataPoint <- exometer_util:get_datapoints(E)],
-	    try
-		exometer_probe:delete(Name, Type, Ref)
-	    after
-		[ets:delete(T, Name) ||
-		    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
-	    end,
-	    ok;
+                         type = Type, ref = Ref} = E] ->
+            [ exometer_cache:delete(Name, DataPoint) ||
+                DataPoint <- exometer_util:get_datapoints(E)],
+            try
+                exometer_probe:delete(Name, Type, Ref)
+            after
+                [ets:delete(T, Name) ||
+                    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
+            end,
+            ok;
         [#exometer_entry{module= Mod, behaviour = entry,
-			 type = Type, ref = Ref} = E] ->
-	    [ exometer_cache:delete(Name, DataPoint) ||
-		DataPoint <- exometer_util:get_datapoints(E)],
+                         type = Type, ref = Ref} = E] ->
+            [ exometer_cache:delete(Name, DataPoint) ||
+                DataPoint <- exometer_util:get_datapoints(E)],
             try Mod:delete(Name, Type, Ref)
             after
                 [ets:delete(T, Name) ||
                     T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
             end,
-	    ok;
+            ok;
         [] ->
             {error, not_found}
     end.

@@ -13,7 +13,7 @@
 -behaviour(exometer_entry).
 
 -export([behaviour/0,
-	 new/3,
+         new/3,
          update/4,
          reset/3,
          get_value/4,
@@ -45,11 +45,11 @@
                          arg_spec(), res_type(), datapoints()}.
 -type fun_spec()     :: simple_fun() | extended_fun().
 -type fun_rep()      :: {mod_name(), fun_name()}
-		      | {mod_name(), fun_name(), each | once,
-			 arg_spec(), res_type(), datapoints()}
-		      | {mod_name(), fun_name(), each | once,
-			 arg_spec(), match, any()}
-		      | {eval, [expr()], datapoints()}.
+                      | {mod_name(), fun_name(), each | once,
+                         arg_spec(), res_type(), datapoints()}
+                      | {mod_name(), fun_name(), each | once,
+                         arg_spec(), match, any()}
+                      | {eval, [expr()], datapoints()}.
 
 -spec behaviour() -> exometer:behaviour().
 behaviour() ->
@@ -257,7 +257,7 @@ actual_datapoints(DPs0, DPs, _) ->
 get_datapoints(_Name, _Type, {_, _, once, _, match, Pat}) ->
     pattern_datapoints(Pat);
 get_datapoints(_Name, _Type, T) when is_tuple(T), is_list(
-						    element(size(T),T)) ->
+                                                    element(size(T),T)) ->
     element(size(T), T);
 get_datapoints(_Name, _Type, _Ref) ->
     [value].
@@ -580,20 +580,20 @@ e({element,E,T}, Bs) ->
     end;
 e({histogram, Vs}, Bs) ->
     case e(Vs, Bs) of
-	L when is_list(L) ->
-	    exometer_util:histogram(L);
-	_ -> error(badarg)
+        L when is_list(L) ->
+            exometer_util:histogram(L);
+        _ -> error(badarg)
     end;
 e({histogram, Vs, DPs}, Bs) ->
     case e(Vs, Bs) of
-	L when is_list(L) ->
-	    DataPoints = case e(DPs, Bs) of
-			     default -> default;
-			     D when is_list(D) -> D;
-			     _ -> error(badarg)
-			 end,
-	    exometer_util:histogram(L, DataPoints);
-	_ -> error(badarg)
+        L when is_list(L) ->
+            DataPoints = case e(DPs, Bs) of
+                             default -> default;
+                             D when is_list(D) -> D;
+                             _ -> error(badarg)
+                         end,
+            exometer_util:histogram(L, DataPoints);
+        _ -> error(badarg)
     end;
 e({fold,Vx,Va,Es,Ea,El}, Bs) when is_atom(Vx), is_atom(Va) ->
     case e(El, Bs) of

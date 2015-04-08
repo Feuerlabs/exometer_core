@@ -23,6 +23,7 @@
     test_std_counter/1,
     test_gauge/1,
     test_fast_counter/1,
+    test_wrapping_counter/1,
     test_update_or_create/1,
     test_update_or_create2/1,
     test_default_override/1,
@@ -68,7 +69,8 @@ groups() ->
       [
         test_std_counter,
         test_gauge,
-        test_fast_counter
+        test_fast_counter,
+        test_wrapping_counter
       ]},
      {test_defaults, [shuffle],
       [
@@ -111,50 +113,49 @@ init_per_testcase(Case, Config) when
       Case == test_folsom_histogram;
       Case == test_history1_folsom;
       Case == test_history4_folsom ->
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     application:start(bear),
     application:start(folsom),
-    exometer:start(),
-    Config;
+    [{started_apps, StartedApps} | Config];
 init_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:set_env(stdlib, exometer_predefined, {script, "../../test/data/test_defaults.script"}),
-    ok = application:start(setup),
-    exometer:start(),
-    Config;
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    [{started_apps, StartedApps} | Config];
 init_per_testcase(test_app_predef, Config) ->
     compile_app1(Config),
-    exometer:start(),
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     Scr = filename:join(filename:dirname(
-			  filename:absname(?config(data_dir, Config))),
-			"data/app1.script"),
+                          filename:absname(?config(data_dir, Config))),
+                        "data/app1.script"),
     ok = application:set_env(app1, exometer_predefined, {script, Scr}),
-    Config;
+    [{started_apps, StartedApps} | Config];
 init_per_testcase(_Case, Config) ->
-    exometer:start(),
-    Config.
+    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
+    [{started_apps, StartedApps} | Config].
 
-end_per_testcase(Case, _Config) when
+end_per_testcase(Case, Config) when
       Case == test_folsom_histogram;
       Case == test_history1_folsom;
       Case == test_history4_folsom ->
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     folsom:stop(),
     application:stop(bear),
     ok;
-end_per_testcase(Case, _Config) when
+end_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:unset_env(common_test, exometer_predefined),
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok = application:stop(setup),
     ok;
-end_per_testcase(test_app_predef, _Config) ->
+end_per_testcase(test_app_predef, Config) ->
     ok = application:stop(app1),
-    exometer:stop(),
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok;
-end_per_testcase(_Case, _Config) ->
-    exometer:stop(),
+end_per_testcase(_Case, Config) ->
+    [application:stop(App) || App <- ?config(started_apps, Config)],
     ok.
 
 %%%===================================================================
@@ -190,6 +191,25 @@ test_fast_counter(_Config) ->
     fc(),
     {ok, [{value, 2}]} = exometer:get_value(C, [value]),
     {ok, [{value, 2}, {ms_since_reset, _}]} = exometer:get_value(C),
+    ok.
+
+test_wrapping_counter(_Config) ->
+    C = [?MODULE, ctr, ?LINE],
+    ok = exometer:new(C, counter, []),
+    Max16 = 65534,
+    Max32 = 4294967294,
+    Max64 = 18446744073709551614,
+    Max64p1 = 18446744073709551615,
+    Max64p21 = 18446744073709551635,
+    ok = exometer:update(C, Max64),
+    {ok, [{value, Max64}, {value16, Max16}, {value32, Max32}, {value64, Max64}]} =
+      exometer:get_value(C, [value, value16, value32, value64]),
+    ok = exometer:update(C, 1),
+    {ok, [{value, Max64p1}, {value16, 0}, {value32, 0}, {value64, 0}]} =
+      exometer:get_value(C, [value, value16, value32, value64]),
+    [ok = exometer:update(C, 1) || _ <- lists:seq(1, 20)],
+    {ok, [{value, Max64p21}, {value16, 20}, {value32, 20}, {value64, 20}]} =
+      exometer:get_value(C, [value, value16, value32, value64]),
     ok.
 
 test_update_or_create(_Config) ->

@@ -13,18 +13,18 @@
 
 %% exometer_entry callbacks
 -export([new/3,
-	 delete/3,
-	 get_value/3,
-	 get_value/4,
-	 get_datapoints/3,
-	 setopts/3,
-	 update/4,
-	 reset/3,
-	 sample/3]).
+         delete/3,
+         get_value/3,
+         get_value/4,
+         get_datapoints/3,
+         setopts/3,
+         update/4,
+         reset/3,
+         sample/3]).
 
 %% exometer_probe callbacks
 -export([behaviour/0,
-	 probe_init/3,
+         probe_init/3,
          probe_terminate/1,
          probe_get_value/2,
          probe_update/2,
@@ -38,10 +38,10 @@
 -include("exometer.hrl").
 -import(netlink_stat, [get_value/1]).
 -record(st, {name,
-	     t_start,
-	     count = 0,
-	     last = 0,
-	     histogram,
+             t_start,
+             count = 0,
+             last = 0,
+             histogram,
              opts = []}).
 
 
@@ -98,11 +98,11 @@ probe_get_datapoints(#st{histogram = H}) ->
 
 probe_get_value(DataPoints, #st{histogram = H} = St) ->
     case DataPoints -- ?DATAPOINTS of
-	[] ->
-	    {ok, fill_datapoints(DataPoints, [], St)};
-	HDPs ->
-	    {ok, HVals} = exometer_histogram:probe_get_value(HDPs, H),
-	    {ok, fill_datapoints(DataPoints, HVals, St)}
+        [] ->
+            {ok, fill_datapoints(DataPoints, [], St)};
+        HDPs ->
+            {ok, HVals} = exometer_histogram:probe_get_value(HDPs, H),
+            {ok, fill_datapoints(DataPoints, HVals, St)}
     end.
 
 probe_setopts(_Entry, _Opts, _St) ->
@@ -112,12 +112,12 @@ probe_update({timer_start, T}, St) ->
     {ok, St#st{t_start = T}};
 probe_update({timer_end, T}, #st{histogram = H, count = C} = St) ->
     try
-	Duration = timer:now_diff(T, St#st.t_start),
-	{ok, H1} = exometer_histogram:probe_update(Duration, H),
-	{ok, St#st{histogram = H1, count = C+1, last = Duration}}
+        Duration = timer:now_diff(T, St#st.t_start),
+        {ok, H1} = exometer_histogram:probe_update(Duration, H),
+        {ok, St#st{histogram = H1, count = C+1, last = Duration}}
     catch
-	error:_ ->
-	    {ok, St}
+        error:_ ->
+            {ok, St}
     end.
 
 probe_reset(#st{histogram = H} = St) ->

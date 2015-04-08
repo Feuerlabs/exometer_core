@@ -8,8 +8,8 @@ parse_transform(Forms, Opts) ->
     Includes = [I || {i,I} <- Opts],
     NewForms =
         igor:parse_transform(
-            Forms, [{igor, IgorOpts ++ [{includes, Includes},
-                                        {preprocess, true}]}|Opts]),
+          Forms, [{igor, IgorOpts ++ [{includes, Includes},
+                                      {preprocess, true}]}|Opts]),
     fix_for_r16b03(NewForms).
 
 %% erl_syntax:revert/1 is horribly broken in R16B03. This transform

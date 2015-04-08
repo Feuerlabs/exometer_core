@@ -178,7 +178,7 @@ to_list(#slide{size = Sz, n = N, max_n = MaxN, buf1 = Buf1, buf2 = Buf2}) ->
 foldl(_Timestamp, _Fun, _Acc, #slide{size = Sz}) when Sz == 0 ->
     [];
 foldl(Timestamp, Fun, Acc, #slide{size = Sz, n = N, max_n = MaxN,
-                           buf1 = Buf1, buf2 = Buf2}) ->
+                                  buf1 = Buf1, buf2 = Buf2}) ->
     Start = Timestamp - Sz,
     lists:foldr(
       Fun, lists:foldl(Fun, Acc, take_since(

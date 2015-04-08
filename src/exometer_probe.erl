@@ -381,7 +381,7 @@
 
 -behaviour(exometer_entry).
 
-% exometer_entry callb
+                                                % exometer_entry callb
 -export(
    [
     behaviour/0,
@@ -413,13 +413,13 @@
 -type mod_state()       :: any().
 -type data_points()     :: [atom()].
 -type probe_reply()     :: ok
-			 | {ok, mod_state()}
-			 | {ok, any(), mod_state()}
-			 | {noreply, mod_state()}
-			 | {error, any()}.
+                         | {ok, mod_state()}
+                         | {ok, any(), mod_state()}
+                         | {noreply, mod_state()}
+                         | {error, any()}.
 -type probe_noreply()   :: ok
-			 | {ok, mod_state()}
-			 | {error, any()}.
+                         | {ok, mod_state()}
+                         | {error, any()}.
 
 -callback behaviour() -> exometer:behaviour().
 -callback probe_init(name(), type(), options()) -> probe_noreply().
@@ -438,9 +438,9 @@
 
 new(Name, Type, [{arg, Module}|Opts]) ->
     { ok, exometer_proc:spawn_process(
-           Name, fun() ->
-                         init(Name, Type, Module, Opts)
-                 end)
+            Name, fun() ->
+                          init(Name, Type, Module, Opts)
+                  end)
     };
 
 
@@ -487,14 +487,14 @@ init(Name, Type, Mod, Opts) ->
 
     %% Create a new state for the module
     case {Mod:probe_init(Name, Type, St#st.opts),
-	  St#st.sample_interval} of
+          St#st.sample_interval} of
         { ok, infinity} ->
             %% No sample timer to start. Return with undefined mod state
-	    loop(St#st{ mod_state = undefined });
+            loop(St#st{ mod_state = undefined });
 
         {{ok, ModSt}, infinity} ->
             %% No sample timer to start. Return with the mod state returned by probe_init.
-	    loop(St#st{ mod_state = ModSt });
+            loop(St#st{ mod_state = ModSt });
 
         {ok, _} ->
             %% Fire up the timer, with undefined mod
@@ -505,7 +505,7 @@ init(Name, Type, Mod, Opts) ->
             loop(sample(St#st{ mod_state = ModSt }));
 
         {{error, Reason}, _} ->
-	    %% FIXME: Proper shutdown.
+            %% FIXME: Proper shutdown.
             {error, Reason}
     end.
 
@@ -518,21 +518,21 @@ loop(St) ->
 handle_msg(Msg, St) ->
     Module = St#st.module,
     case Msg of
-	{system, From, Req} ->
-	    exometer_proc:handle_system_msg(
-	      Req, From, St, fun(St1) -> loop(St1) end);
+        {system, From, Req} ->
+            exometer_proc:handle_system_msg(
+              Req, From, St, fun(St1) -> loop(St1) end);
         {exometer_proc, {From, Ref}, {get_value, default} } ->
             {ok, DataPoints} = Module:probe_get_datapoints(St#st.mod_state),
             {Reply, NSt} =
-            process_probe_reply(St, Module:probe_get_value(DataPoints,
-                                                           St#st.mod_state)),
+                process_probe_reply(St, Module:probe_get_value(DataPoints,
+                                                               St#st.mod_state)),
             From ! {Ref, Reply },
             NSt;
 
         {exometer_proc, {From, Ref}, {get_value, DataPoints} } ->
             {Reply, NSt} =
-            process_probe_reply(St, Module:probe_get_value(DataPoints,
-                                                           St#st.mod_state)),
+                process_probe_reply(St, Module:probe_get_value(DataPoints,
+                                                               St#st.mod_state)),
             From ! {Ref, Reply },
             NSt;
 
@@ -556,14 +556,14 @@ handle_msg(Msg, St) ->
             {NSt, Opts1} = process_opts(Options, St),
 
             {Reply, NSt1} = %% Call module setopts for remainder of opts
-            process_probe_reply(
-	      NSt, Module:probe_setopts(Entry, Opts1, NSt#st.mod_state)),
+                process_probe_reply(
+                  NSt, Module:probe_setopts(Entry, Opts1, NSt#st.mod_state)),
 
             From ! {Ref, Reply },
             %% Return state with options and any non-duplicate original opts.
             NSt1#st {
               opts = Opts1 ++
-              [{K,V} || {K,V} <- St#st.opts, not lists:keymember(K,1,Opts1) ]
+                  [{K,V} || {K,V} <- St#st.opts, not lists:keymember(K,1,Opts1) ]
              };
 
         {timeout, _TRef, {exometer_proc, sample_timer}} ->

@@ -20,10 +20,10 @@
 -module(exometer_info).
 
 -export([status/1,
-	 pp/1,
-	 pp_lookup/1,
-	 pp_find/1,
-	 pp_select/1]).
+         pp/1,
+         pp_lookup/1,
+         pp_find/1,
+         pp_select/1]).
 
 -include("exometer.hrl").
 -include_lib("parse_trans/include/exprecs.hrl").
@@ -74,10 +74,10 @@ pp(X) ->
 %% @end
 pp_lookup(Name) ->
     case exometer:info(Name, entry) of
-	undefined ->
-	    undefined;
-	Entry ->
-	    pp(Entry)
+        undefined ->
+            undefined;
+        Entry ->
+            pp(Entry)
     end.
 
 -spec pp_find(list()) -> [pp()].

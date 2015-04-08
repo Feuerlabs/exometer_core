@@ -24,12 +24,12 @@
 -behaviour(gen_server).
 
 -export([start_link/0,
-	 init/1,
-	 handle_call/3,
-	 handle_cast/2,
-	 handle_info/2,
-	 terminate/2,
-	 code_change/3]).
+         init/1,
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         terminate/2,
+         code_change/3]).
 
 -export([monitor/2]).
 -export([hook/1]).
@@ -78,9 +78,9 @@ start_link() ->
 %% @private
 init(_) ->
     Mon = lists:foldl(
-	    fun({Mf, Mc}, D) ->
-		    orddict:append(Mf, Mc, D)
-	    end, orddict:new(), find_env()),
+            fun({Mf, Mc}, D) ->
+                    orddict:append(Mf, Mc, D)
+            end, orddict:new(), find_env()),
     init_monitor(Mon),
     {ok, #st{mon = Mon}}.
 
@@ -89,7 +89,7 @@ find_env() ->
     E2 = exometer_util:get_env(folsom_monitor, []),
     lists:flatmap(
       fun({_,_} = M) -> [M];
-	 (L) when is_list(L) -> L
+         (L) when is_list(L) -> L
       end, E1 ++ E2).
 
 %% @private
@@ -120,20 +120,20 @@ init_monitor([_|_]) ->
 
 do_init_monitor() ->
     case is_transformed() of
-	true ->
-	    lager:debug("already transformed...~n", []),
-	    ok;
-	false ->
-	    lager:debug("transforming folsom_metrics...~n", []),
-	    parse_trans_mod:transform_module(folsom_metrics, fun pt/2, [])
+        true ->
+            lager:debug("already transformed...~n", []),
+            ok;
+        false ->
+            lager:debug("transforming folsom_metrics...~n", []),
+            parse_trans_mod:transform_module(folsom_metrics, fun pt/2, [])
     end.
 
 pt(Forms, _) ->
     Funcs = funcs(),
     NewForms = parse_trans:plain_transform(
-		 fun(F) ->
-			 plain_pt(F, Funcs)
-		 end, Forms),
+                 fun(F) ->
+                         plain_pt(F, Funcs)
+                 end, Forms),
     mark_transformed(NewForms).
 
 is_transformed() ->
@@ -147,10 +147,10 @@ mark_transformed([H|T]) ->
 
 plain_pt({function,L,F,A,Cs}, Funcs) ->
     case lists:keyfind({F,A}, 1, Funcs) of
-	{_, Type} ->
-	    {function,L,F,A,insert_hook(Type, Cs)};
-	false ->
-	    continue
+        {_, Type} ->
+            {function,L,F,A,insert_hook(Type, Cs)};
+        false ->
+            continue
     end;
 plain_pt(_, _) ->
     continue.
@@ -169,10 +169,10 @@ funcs() ->
 insert_hook(Type, Cs) ->
     lists:map(
       fun({clause,L0,Args,Gs,Body}) ->
-	      L = element(2,hd(Body)),
-	      {clause,L0,Args,Gs,
-	       [{call,L,{remote,L,{atom,L,?MODULE},{atom,L,hook}},
-		 [cons([{atom,L,Type}|Args], L)]}|Body]}
+              L = element(2,hd(Body)),
+              {clause,L0,Args,Gs,
+               [{call,L,{remote,L,{atom,L,?MODULE},{atom,L,hook}},
+                 [cons([{atom,L,Type}|Args], L)]}|Body]}
       end, Cs).
 
 cons([H|T], L) -> {cons,L,H,cons(T,L)};
@@ -181,32 +181,32 @@ cons([]   , L) -> {nil,L}.
 check_stack(Mon, Stack, Args) ->
     orddict:fold(
       fun('_', CBs, Acc) ->
-	      _ = [maybe_create(CB, Args) || CB <- CBs],
-	      Acc;
-	 (Mod, CBs, Acc) ->
-	      case lists:keymember(Mod, 1, Stack) of
-		  true ->
-		      _ = [maybe_create(CB, Args) || CB <- CBs];
-		  false ->
-		      ignore
-	      end,
-	      Acc
+              _ = [maybe_create(CB, Args) || CB <- CBs],
+              Acc;
+         (Mod, CBs, Acc) ->
+              case lists:keymember(Mod, 1, Stack) of
+                  true ->
+                      _ = [maybe_create(CB, Args) || CB <- CBs];
+                  false ->
+                      ignore
+              end,
+              Acc
       end, ok, Mon).
 
 maybe_create(CB, [FolsomType, Name | Args]) ->
     try CB:copy_folsom(Name, FolsomType, Args) of
-	{ExoName, ExoType, ExoArgs} ->
-	    exometer:new(ExoName, ExoType, ExoArgs);
-	L when is_list(L) ->
-	    lists:foreach(
-	      fun({ExoName, ExoType, ExoArgs}) ->
-		      exometer:new(ExoName, ExoType, ExoArgs)
-	      end, L);
-	false ->
-	    ignore
+        {ExoName, ExoType, ExoArgs} ->
+            exometer:new(ExoName, ExoType, ExoArgs);
+        L when is_list(L) ->
+            lists:foreach(
+              fun({ExoName, ExoType, ExoArgs}) ->
+                      exometer:new(ExoName, ExoType, ExoArgs)
+              end, L);
+        false ->
+            ignore
     catch
-	Cat:Msg ->
-	    lager:error("~p:copy_folsom(~p,~p,~p): ~p:~p~n",
-			[CB, Name, FolsomType, Args, Cat, Msg]),
-	    ignore
+        Cat:Msg ->
+            lager:error("~p:copy_folsom(~p,~p,~p): ~p:~p~n",
+                        [CB, Name, FolsomType, Args, Cat, Msg]),
+            ignore
     end.
