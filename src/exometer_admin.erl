@@ -45,8 +45,9 @@
    ]).
 -export([find_auto_template/1, prefixes/1, make_patterns/2]).
 
--export([monitor/2, demonitor/1]).
+-export([monitor/2, monitor/3, demonitor/1]).
 
+-compile({no_auto_import, [monitor/3]}).
 -include("exometer.hrl").
 -include("log.hrl").
 
@@ -228,7 +229,10 @@ check_type_arg(Type, Opts) ->
     {Type, Opts}.
 
 monitor(Name, Pid) when is_pid(Pid) ->
-    gen_server:cast(?MODULE, {monitor, Name, Pid}).
+    monitor(Name, Pid, delete).
+
+monitor(Name, Pid, OnError) when is_pid(Pid) ->
+    gen_server:cast(?MODULE, {monitor, Name, Pid, OnError}).
 
 demonitor(Pid) when is_pid(Pid) ->
     gen_server:cast(?MODULE, {demonitor, Pid}).
@@ -261,7 +265,7 @@ start_link() ->
 init(_) ->
     {ok, #st{}}.
 
-handle_call({new_entry, Name, Type, Opts, AllowExisting}, _From, S) ->
+handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
     try
         #exometer_entry{options = NewOpts} = E0 =
             lookup_definition(Name, Type, Opts),
@@ -269,14 +273,24 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting}, _From, S) ->
         case {ets:member(exometer_util:table(), Name), AllowExisting} of
             {true, false} ->
                 {reply, {error, exists}, S};
-            _ ->
+            _Other ->
+		lager:debug("_Other = ~p~n", [_Other]),
                 E1 = process_opts(E0, NewOpts),
-                Res = exometer:create_entry(E1),
-                exometer_report:new_entry(E1),
+                Res = try  exometer:create_entry(E1),
+			   exometer_report:new_entry(E1)
+		      catch
+			  error:Error1 ->
+			      lager:debug(
+				"ERROR create_entry(~p) :- ~p~n~p",
+				[E1, Error1, erlang:get_stacktrace()]),
+			      erlang:error(Error1)
+		      end,
                 {reply, Res, S}
         end
     catch
         error:Error ->
+	    lager:error("~p -*-> error:~p~n~p~n",
+			[_Req, Error, erlang:get_stacktrace()]),
             {reply, {error, Error}, S}
     end;
 handle_call({repair_entry, Name}, _From, S) ->
@@ -328,9 +342,9 @@ handle_call({auto_create, Name}, _From, S) ->
 handle_call(_, _, S) ->
     {reply, error, S}.
 
-handle_cast({monitor, Name, Pid}, S) ->
+handle_cast({monitor, Name, Pid, OnError}, S) ->
     Ref = erlang:monitor(process, Pid),
-    put(Ref, Name),
+    put(Ref, {Name, OnError}),
     put(Pid, Ref),
     {noreply, S};
 handle_cast({demonitor, Pid}, S) ->
@@ -350,14 +364,21 @@ handle_info({'DOWN', Ref, _, Pid, _}, S) ->
     case get(Ref) of
         undefined ->
             {noreply, S};
-        Proc when is_atom(Proc) ->
+        {Name, OnError} when is_atom(Name); is_list(Name) ->
+            erase(Ref),
+            erase(Pid),
+	    on_error(Name, OnError),
+            {noreply, S};
+	Name when is_atom(Name) ->
+	    %% BW compat
             erase(Ref),
             erase(Pid),
             {noreply, S};
         Name when is_list(Name) ->
+	    %% BW compat
             erase(Ref),
             erase(Pid),
-            try delete_entry_(Name) catch error:_ -> ok end,
+	    on_error(Name, delete),
             {noreply, S}
     end;
 handle_info(_, S) ->
@@ -404,7 +425,47 @@ tables() ->
 
 %% ====
 
-lookup_definition(Name, ad_hoc, Opts) ->
+on_error(Name, {restart, {M, F, A}}) ->
+    try call_restart(M, F, A) of
+	{ok, Ref} ->
+	    if is_list(Name) ->
+		    [ets:update_element(T, Name, [{#exometer_entry.ref, Ref}])
+		     || T <- exometer_util:tables()];
+	       true -> ok
+	    end,
+	    ok;
+        disable ->
+            try_disable_entry_(Name);
+        delete ->
+            try_delete_entry_(Name);
+	Other ->
+	    restart_failed(Name, Other)
+    catch error:R ->
+	    restart_failed(Name, {error, R})
+    end,
+    ok;
+on_error(Name, delete) ->
+    try_delete_entry_(Name);
+on_error(_Proc, _OnError) ->
+    %% Not good, but will do for now.
+    lager:debug("Unrecognized OnError: ~p (~p)~n", [_OnError, _Proc]),
+    ok.
+
+call_restart(M, F, A) ->
+    apply(M, F, A).
+
+restart_failed(Name, Error) ->
+    lager:debug("Restart failed ~p: ~p~n", [Name, Error]),
+    if is_list(Name) ->
+	    try_delete_entry_(Name);
+       true ->
+	    ok
+    end.
+
+lookup_definition(Name, Type, Opts) ->
+    check_aliases(lookup_definition_(Name, Type, Opts)).
+
+lookup_definition_(Name, ad_hoc, Opts) ->
     case [K || K <- [module, type], not lists:keymember(K, 1, Opts)] of
         [] ->
             {E0, Opts1} =
@@ -426,7 +487,7 @@ lookup_definition(Name, ad_hoc, Opts) ->
         [_|_] = Missing ->
             error({required, Missing})
     end;
-lookup_definition(Name, Type, Opts) ->
+lookup_definition_(Name, Type, Opts) ->
     E = case ets:prev(?EXOMETER_SHARED, {default, Type, <<>>}) of
             {default, Type, N} = D0 when N==[''], N==Name ->
                 case ets:lookup(?EXOMETER_SHARED, D0) of
@@ -459,6 +520,15 @@ merge_opts(Opts, #exometer_entry{options = DefOpts} = E) ->
                                 lists:keystore(K, 1, Acc, {K,V})
                         end, DefOpts, Opts),
     E#exometer_entry{options = Opts1}.
+
+check_aliases(#exometer_entry{name = N, options = Opts} = E) ->
+    case lists:keyfind(aliases, 1, Opts) of
+	{_, Aliases} ->
+	    exometer_alias:check_map([{N, Aliases}]);
+	_ ->
+	    ok
+    end,
+    E.
 
 default_definition_(Name, Type) ->
     case search_default(Name, Type) of
@@ -600,7 +670,26 @@ process_opts(Entry, Options) ->
                        Entry1
                end, Entry#exometer_entry{options = Options}, Options).
 
+try_disable_entry_(Name) when is_list(Name) ->
+    try exometer:setopts(Name, [{status, disabled}])
+    catch
+        error:Err ->
+            lager:debug("Couldn't disable ~p: ~p~n", [Name, Err]),
+            try_delete_entry_(Name)
+    end;
+try_disable_entry_(_Name) ->
+    ok.
+
+try_delete_entry_(Name) ->
+    try delete_entry_(Name)
+    catch
+	error:R ->
+	    lager:debug("Couldn't delete ~p: ~p~n", [Name, R]),
+	    ok
+    end.
+
 delete_entry_(Name) ->
+    exometer_cache:delete_name(Name),
     case ets:lookup(exometer_util:table(), Name) of
         [#exometer_entry{module = exometer, type = Type}] when Type==counter;
                                                                Type==gauge ->
@@ -617,9 +706,7 @@ delete_entry_(Name) ->
             end,
             ok;
         [#exometer_entry{behaviour = probe,
-                         type = Type, ref = Ref} = E] ->
-            [ exometer_cache:delete(Name, DataPoint) ||
-                DataPoint <- exometer_util:get_datapoints(E)],
+                         type = Type, ref = Ref}] ->
             try
                 exometer_probe:delete(Name, Type, Ref)
             after
@@ -628,9 +715,7 @@ delete_entry_(Name) ->
             end,
             ok;
         [#exometer_entry{module= Mod, behaviour = entry,
-                         type = Type, ref = Ref} = E] ->
-            [ exometer_cache:delete(Name, DataPoint) ||
-                DataPoint <- exometer_util:get_datapoints(E)],
+                         type = Type, ref = Ref}] ->
             try Mod:delete(Name, Type, Ref)
             after
                 [ets:delete(T, Name) ||

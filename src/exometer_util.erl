@@ -15,6 +15,7 @@
    [
     timestamp/0,
     timestamp_to_datetime/1,
+    get_opt/2,
     get_opt/3,
     get_env/2,
     tables/0,
@@ -33,7 +34,8 @@
     set_status/2,
     set_event_flag/2,
     clear_event_flag/2,
-    test_event_flag/2
+    test_event_flag/2,
+    ensure_all_started/1
    ]).
 
 -export_type([timestamp/0]).
@@ -89,6 +91,13 @@ get_env1(App, Key) ->
     case application:get_env(App, Key) of
         {ok, undefined} -> undefined;
         Other           -> Other
+    end.
+
+get_opt(K, Opts) ->
+    case lists:keyfind(K, 1, Opts) of
+	{_, V} -> V;
+	false ->
+	    error({required, K})
     end.
 
 get_opt(K, Opts, Default) ->
@@ -353,6 +362,38 @@ clear_event_flag(update, disabled) -> 0.
 test_event_flag(update, St) when St band 2#10 =:= 2#10 -> true;
 test_event_flag(update, _) -> false.
 
+%% This implementation is originally from Basho's Webmachine. On
+%% older versions of Erlang, we don't have
+%% application:ensure_all_started, so we use this wrapper function to
+%% either use the native implementation or our own version, depending
+%% on what's available.
+-spec ensure_all_started(atom()) -> {ok, [atom()]} | {error, term()}.
+ensure_all_started(App) ->
+    case erlang:function_exported(application, ensure_all_started, 1) of
+        true ->
+            application:ensure_all_started(App);
+        false ->
+            ensure_all_started(App, [])
+    end.
+
+%% This implementation is originally from Basho's
+%% Webmachine. Reimplementation of ensure_all_started. NOTE this does
+%% not behave the same as the native version in all cases, but as a
+%% quick hack it works well enough for our purposes. Eventually I
+%% assume we'll drop support for older versions of Erlang and this can
+%% be eliminated.
+ensure_all_started(App, Apps0) ->
+    case application:start(App) of
+        ok ->
+            {ok, lists:reverse([App | Apps0])};
+        {error,{already_started,App}} ->
+            {ok, lists:reverse(Apps0)};
+        {error,{not_started,BaseApp}} ->
+            {ok, Apps} = ensure_all_started(BaseApp, Apps0),
+            ensure_all_started(App, [BaseApp|Apps])
+    end.
+
+
 %% EUnit tests
 -ifdef(TEST).
 
@@ -364,7 +405,7 @@ key_match_test() ->
     {ok,yes} = report_type([a,b,c], [], [{[a,b,'_'], yes}]),
     {ok,yes} = report_type([a,b,c], [], [{[a,'_',c], yes}]),
     {ok,yes} = report_type([a,b,c], [], [{[a,b|'_'], yes}]),
-    {ok,yes} = report_type([a,b,c], [{type,yes}], [{[a,b,c], no}]),
+    {ok,yes} = report_type([a,b,c], [{report_type,yes}], [{[a,b,c], no}]),
     ok.
 
 -endif.

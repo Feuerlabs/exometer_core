@@ -25,6 +25,7 @@
 -export([new/3,
          load/1,
          unload/1,
+         check_map/1,
          delete/1,
          update/2,
          resolve/1,

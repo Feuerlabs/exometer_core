@@ -376,12 +376,36 @@
 %% NewState}', where `NewState' contains the new state of the probe
 %% that reflects the processed message.
 %%
-
+%% == Fault tolerance ==
+%% Probes are supervised by the `exometer_admin' process, and can be restarted
+%% after a crash. Restart parameters are provided via the option
+%% `{restart, Params}', where `Params' is a list of `{Frequency, Action}'
+%% tuples. `Frequency' is either `{Count, MilliSecs}' or ``'_''', and
+%% the corresponding `Action :: restart | disable | delete' will be performed
+%% if the frequency of restarts falls within the given limit.
+%%
+%% For example, `[{{3, 1000}, restart}]' will allow 3 restarts within a 1-second
+%% window. The matching is performed from top to bottom, and the first matching
+%% pattern is acted upon. If no matching pattern is found, the default action
+%% is `delete'. A pattern ``{'_', Action}'' acts as a catch-all, and should
+%% be put last in the list.
+%%
+%% It is also possible to specify ``{{Count, '_'}, Action}'', which means
+%% that a total of `Count' restarts is permitted, regardless of how far apart
+%% they are. The count is reset after each restart.
+%%
+%% Example:
+%% <pre lang="erlang">
+%%   {restart, [{{3,1000}, restart},   % up to 3 restarts within 1 sec
+%%              {{4,'_'} , disable},   % a total of up to 4 restarts
+%%              {'_'     , delete}]}   % anything else
+%% </pre>
+%% @end
 -module(exometer_probe).
 
 -behaviour(exometer_entry).
 
-                                                % exometer_entry callb
+%% exometer_entry callbacks
 -export(
    [
     behaviour/0,
@@ -395,7 +419,16 @@
     setopts/3
    ]).
 
+-export([start_probe/1,
+	 stop_probe/1]).
+
+-export([restart/4]).
+
 -include("exometer.hrl").
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
 
 -record(st, {
           name,
@@ -437,17 +470,114 @@
 -callback probe_code_change(any(), mod_state(), any()) -> {ok, mod_state()}.
 
 new(Name, Type, [{arg, Module}|Opts]) ->
+    Restart = proplists:get_value(restart, Opts, default_restart()),
+    SpawnOpts = proplists:get_value(spawn_opts, Opts, spawn_opts()),
     { ok, exometer_proc:spawn_process(
             Name, fun() ->
                           init(Name, Type, Module, Opts)
-                  end)
+                 end, proc_opts(Name, Module, Restart, SpawnOpts))
     };
-
 
 new(Name, Type, Options) ->
     %% Extract the module to use.
     {value, { module, Module }, Opts1 } = lists:keytake(module, 1, Options),
     new(Name, Type, [{arg, Module} | Opts1]).
+
+proc_opts(Name, Module, Restart, SpawnOpts) when is_list(Restart) ->
+    proc_opts_(Name, Module, on_error_init(Restart), SpawnOpts);
+proc_opts(Name, Module, Restart, SpawnOpts) ->
+    proc_opts_(Name, Module, Restart, SpawnOpts).
+
+proc_opts_(Name, Module, Restart, SpawnOpts) ->
+    OnError = on_error(Name, Module, Restart, SpawnOpts),
+    [{on_error, OnError}, {spawn_opts, SpawnOpts}].
+
+
+spawn_opts() ->
+    [{fullsweep_after, 10}].
+
+on_error_init(R) when is_list(R) ->
+    {0, [], max_time(R), R}.
+
+on_error(Name, Module, R, SpawnOpts) ->
+    {restart, {?MODULE, restart, [Name, Module, R, SpawnOpts]}}.
+
+check_restart(Restart) ->
+    TS = exometer_util:timestamp(),
+    check_restart(TS, Restart).
+
+check_restart(TS, {Total, Hist, MaxT, R}) when is_integer(MaxT) ->
+    NewTotal = Total + 1,
+    Oldest = TS - MaxT,
+    NewHist = [TS | [T || T <- Hist,
+			  T > Oldest]],
+    {action(NewTotal, NewHist, MaxT, R), {NewTotal, NewHist, MaxT, R}};
+check_restart(_TS, {Total, Hist, '_', R}) ->
+    NewTotal = Total + 1,
+    {action(NewTotal, [], '_', R), {NewTotal, Hist, '_', R}}.
+
+
+max_time([{{_,T},_}|Rest]) ->
+    max_time(Rest, T);
+max_time([{_,_}|Rest]) ->
+    max_time(Rest);
+max_time([]) ->
+    '_'.
+
+max_time([{{_,T},_}|Rest], Max) when is_integer(T) ->
+    max_time(Rest, erlang:max(T, Max));
+max_time([_|Rest], Max) ->
+    max_time(Rest, Max);
+max_time([], Max) ->
+    Max.
+
+action(_Total, _Hist, _MaxT, [{'_', Action}|_]) ->
+    Action;
+action(Total, Hist, MaxT, [{{N,'_'}, Action}|R]) ->
+    if N >= Total -> Action;
+       true -> action(Total, Hist, MaxT, R)
+    end;
+action(Total, Hist, MaxT, [{{N,T}, Action}|R]) ->
+    case within(Hist, N, T) of
+	true -> Action;
+	false ->
+	    action(Total, Hist, MaxT, R)
+    end;
+action(_, _, _, []) ->
+    delete.
+
+within([T|Ts], N, Tm) ->
+    within(Ts, 1, N, T - Tm);
+within([], _, _) ->
+    false.
+
+within([H|T], N, M, Lim) when H > Lim ->
+    N1 = N + 1,
+    if N1 =< M ->
+	    within(T, N1, M, Lim);
+       true ->
+	    false
+    end;
+within(_, _, _, _) ->
+    true.
+
+restart(Name, Module, Error, SpawnOpts) ->
+    Type = exometer:info(Name, type),
+    Opts = exometer:info(Name, options),
+    case check_restart(Error) of
+	{restart, Error1} ->
+	    {ok, exometer_proc:spawn_process(
+		   Name, fun() ->
+				 init(Name, Type, Module, Opts)
+			 end,
+		   proc_opts(Name, Module, Error1, SpawnOpts))};
+	{Other, _} when Other==delete; Other==disable ->
+	    Other
+    end.
+
+default_restart() ->
+    [{{3, 60000}, restart},
+     {'_', disable}].
 
 %% Should never be called directly for exometer_probe.
 behaviour() ->
@@ -477,6 +607,37 @@ reset(_Name, _Type, Pid) when is_pid(Pid) ->
 
 sample(_Name, _Type, Pid) when is_pid(Pid) ->
     exometer_proc:cast(Pid, sample).
+
+
+%% === housekeeping functions used e.g. at enable/disable
+
+%% @private
+stop_probe(#exometer_entry{name = Name,
+			   type = Type,
+			   ref = Ref}) ->
+    exometer_cache:delete_name(Name),
+    if is_pid(Ref) ->
+	    try exometer_probe:delete(Name, Type, Ref)
+	    catch
+		error:_ ->
+		    kill_probe(Ref)
+	    end;
+       true ->
+	    ok
+    end.
+
+kill_probe(Ref) when is_pid(Ref) ->
+    exometer_admin:demonitor(Ref),
+    exit(Ref, kill).
+
+%% @private
+start_probe(#exometer_entry{module = Module,
+			    name = Name,
+			    type = Type,
+			    options = Opts}) ->
+    new(Name, Type, [{ arg, Module} | Opts ]).
+
+%% == Probe implementation
 
 init(Name, Type, Mod, Opts) ->
     process_flag(min_heap_size, 40000),
@@ -632,3 +793,32 @@ process_opts([Opt|T], St, Acc) ->
     process_opts(T, St, [Opt | Acc]);
 process_opts([], St, Acc) ->
     {St, lists:reverse(Acc)}.
+
+%% EUnit
+
+-ifdef(TEST).
+
+restart_test_() ->
+    [
+     ?_test(t_restart_1()),
+     ?_test(t_restart_2())
+    ].
+
+t_restart_1() ->
+    R = [{{3,1000}, restart},   % up to 3 restarts within 1 sec
+         {{4,'_'} , disable},   % a total of up to 4 restarts
+         {'_', delete}],        % anything else
+    OE = on_error_init(R),
+    {restart, OE1} = check_restart(100, OE),
+    {restart, OE2} = check_restart(200, OE1),
+    {restart, OE3} = check_restart(300, OE2),
+    {disable, OE4} = check_restart(400, OE3),
+    {delete , _}   = check_restart(500, OE4),
+    ok.
+
+t_restart_2() ->
+    R = [],
+    {delete, _} = check_restart({1, [500], 1000, R}),
+    ok.
+
+-endif.
