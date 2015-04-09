@@ -369,12 +369,9 @@ test_event_flag(update, _) -> false.
 %% on what's available.
 -spec ensure_all_started(atom()) -> {ok, [atom()]} | {error, term()}.
 ensure_all_started(App) ->
-    case erlang:function_exported(application, ensure_all_started, 1) of
-        true ->
-            application:ensure_all_started(App);
-        false ->
-            ensure_all_started(App, [])
-    end.
+    %% Referencing application:ensure_all_started/1 will anger Xref
+    %% in earlier R16B versions of OTP
+    ensure_all_started(App, []).
 
 %% This implementation is originally from Basho's
 %% Webmachine. Reimplementation of ensure_all_started. NOTE this does

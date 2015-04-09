@@ -68,8 +68,14 @@ end_per_testcase(_Case, Config) ->
     ok.
 
 stop_started_apps(Config) ->
-    [application:stop(A) || A <- lists:reverse(?config(started_apps, Config))],
+    [stop_app(A) || A <- lists:reverse(?config(started_apps, Config))],
     ok.
+
+stop_app(App) ->
+    case application:stop(App) of
+        ok -> ok;
+        {error, {not_started,_}} -> ok
+    end.
 
 %%%===================================================================
 %%% Test Cases
