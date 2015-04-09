@@ -568,7 +568,7 @@ module_setopts(#exometer_entry{behaviour = probe,
                     {ok, Ref} = exometer_probe:start_probe(E),
                     update_entry_elems(Name, [{#exometer_entry.ref, Ref}])
             end;
-        false ->
+        _ ->
             exometer_probe:setopts(E, Options, NewStatus)
     end,
     ok;

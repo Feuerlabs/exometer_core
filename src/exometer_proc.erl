@@ -38,6 +38,7 @@
 -module(exometer_proc).
 
 -export([spawn_process/2,
+         spawn_process/3,
          cast/2,
          call/2,
          process_options/1,
@@ -76,6 +77,16 @@ spawn_process(Name, F) when is_function(F,0) ->
                            exometer_admin:monitor(Name, self()),
                            init(Name, Mod, F, Parent)
                    end).
+
+spawn_process(Name, F, Opts) ->
+    {_, Mod} = erlang:fun_info(F, module),
+    Parent = self(),
+    SpawnOpts = proplists:get_value(spawn_opts, Opts, []),
+    OnError = proplists:get_value(on_error, Opts, delete),
+    proc_lib:spawn_opt(fun() ->
+                               exometer_admin:monitor(Name, self(), OnError),
+                               init(Name, Mod, F, Parent)
+                       end, SpawnOpts).
 
 init(Name, Mod, StartF, ParentPid) ->
     I = #info{parent = ParentPid},
