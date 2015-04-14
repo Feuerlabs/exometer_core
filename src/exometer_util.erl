@@ -95,9 +95,9 @@ get_env1(App, Key) ->
 
 get_opt(K, Opts) ->
     case lists:keyfind(K, 1, Opts) of
-	{_, V} -> V;
-	false ->
-	    error({required, K})
+        {_, V} -> V;
+        false ->
+            error({required, K})
     end.
 
 get_opt(K, Opts, Default) ->
