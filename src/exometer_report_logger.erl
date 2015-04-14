@@ -269,8 +269,8 @@ handle_cast({socket, Socket}, #st{input = L} = S) ->
     case L of
         #tcp{active = N} = T ->
             case inet:getopts(Socket, [active]) of
-                [false] ->
-                    inet:setopts(Socket, {active, N});
+                {ok, [{active, false}]} ->
+                    inet:setopts(Socket, [{active, N}]);
                 _ ->
                     ok
             end,
