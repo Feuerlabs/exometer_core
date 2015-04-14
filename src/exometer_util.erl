@@ -15,6 +15,7 @@
    [
     timestamp/0,
     timestamp_to_datetime/1,
+    get_opt/2,
     get_opt/3,
     get_env/2,
     tables/0,
@@ -89,6 +90,13 @@ get_env1(App, Key) ->
     case application:get_env(App, Key) of
         {ok, undefined} -> undefined;
         Other           -> Other
+    end.
+
+get_opt(K, Opts) ->
+    case lists:keyfind(K, 1, Opts) of
+        {_, V} -> V;
+        false ->
+            error({required, K})
     end.
 
 get_opt(K, Opts, Default) ->
