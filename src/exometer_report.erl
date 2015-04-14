@@ -1214,7 +1214,8 @@ restart_subscr_timer(_, _, _) ->
 restart_batch_timer(Name, #reporter{name = Reporter,
                                     intervals = Ints}, T0) when is_list(Ints) ->
     case lists:keyfind(Name, #interval.name, Ints) of
-        #interval{time = Time} = I when is_integer(Time) ->
+        #interval{time = Time, t_ref = OldTRef} = I when is_integer(Time) ->
+            cancel_timer(OldTRef),
             TRef = erlang:send_after(
                      adjust_interval(Time, T0), self(),
                      batch_timer_msg(Reporter, Name, Time, T0)),
