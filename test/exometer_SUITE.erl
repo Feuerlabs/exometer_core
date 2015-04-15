@@ -269,8 +269,15 @@ test_std_histogram(_Config) ->
      {50,2},{75,3},{90,4},{95,5},{99,8},{999,9}] = scale_mean(DPs),
     ok.
 
-test_slot_histogram(_Config) ->
+test_slot_histogram(Config) ->
     C = [?MODULE, hist, ?LINE],
+    ok = majority(5, fun test_slot_histogram_/1, [{metric_name, C}|Config]).
+
+test_slot_histogram_({cleanup, Config}) ->
+    C = ?config(metric_name, Config),
+    exometer:delete(C);
+test_slot_histogram_(Config) ->
+    C = ?config(metric_name, Config),
     ok = exometer:new(C, histogram, [{histogram_module, exometer_slot_slide},
 				     {keep_high, 100},
                                      {truncate, false}]),
@@ -538,3 +545,26 @@ compile_app1(Config) ->
     Path = filename:join(Dir, "ebin"),
     PRes = code:add_pathz(Path),
     ct:log("add_pathz(~p) -> ~p~n", [Path, PRes]).
+
+majority(N, F, Cfg) ->
+    majority(N, F, Cfg, []).
+
+majority(0, _, _, Hist) ->
+    Failed = [1 || {caught,_,_} <- Hist],
+    ct:log("majority(): Failed = ~p, Hist=~p~n", [Failed, Hist]),
+    case {length(Failed), length(Hist)} of
+        {Lf, L} when Lf >= L div 2 ->
+            {error, {too_many_failures, Hist}};
+        _ ->
+            ok
+    end;
+majority(N, F, Cfg, Hist) when N > 0 ->
+    Res = try F(Cfg)
+          catch
+              C:R ->
+                  {caught, C, R}
+          after
+              F({cleanup, Cfg})
+          end,
+    majority(N-1, F, Cfg, [Res|Hist]).
+
