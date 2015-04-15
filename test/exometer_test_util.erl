@@ -1,6 +1,7 @@
 -module(exometer_test_util).
 
--export([ensure_all_started/1]).
+-export([ensure_all_started/1,
+         majority/3]).
 
 %% This implementation is originally from Basho's Webmachine. On
 %% older versions of Erlang, we don't have
@@ -32,3 +33,29 @@ ensure_all_started(App, Apps0) ->
             {ok, Apps} = ensure_all_started(BaseApp, Apps0),
             ensure_all_started(App, [BaseApp|Apps])
     end.
+
+%% Run test N times. Success if a majority of the tests succeed.
+%% Cleanup between runs done by calling F({cleanup, Config})
+%% Returns 'ok' or {error, Info}.
+%%
+majority(N, F, Cfg) ->
+    majority(N, F, Cfg, []).
+
+majority(0, _, _, Hist) ->
+    Failed = [1 || {caught,_,_} <- Hist],
+    ct:log("majority(): Failed = ~p, Hist=~p~n", [Failed, Hist]),
+    case {length(Failed), length(Hist)} of
+        {Lf, L} when Lf >= L div 2 ->
+            {error, {too_many_failures, Hist}};
+        _ ->
+            ok
+    end;
+majority(N, F, Cfg, Hist) when N > 0 ->
+    Res = try F(Cfg)
+          catch
+              C:R ->
+                  {caught, C, R}
+          after
+              F({cleanup, Cfg})
+          end,
+    majority(N-1, F, Cfg, [Res|Hist]).

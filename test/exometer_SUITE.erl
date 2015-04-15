@@ -49,6 +49,8 @@
     vals/0
    ]).
 
+-import(exometer_test_util, [majority/3]).
+
 -include_lib("common_test/include/ct.hrl").
 
 %%%===================================================================
@@ -545,26 +547,3 @@ compile_app1(Config) ->
     Path = filename:join(Dir, "ebin"),
     PRes = code:add_pathz(Path),
     ct:log("add_pathz(~p) -> ~p~n", [Path, PRes]).
-
-majority(N, F, Cfg) ->
-    majority(N, F, Cfg, []).
-
-majority(0, _, _, Hist) ->
-    Failed = [1 || {caught,_,_} <- Hist],
-    ct:log("majority(): Failed = ~p, Hist=~p~n", [Failed, Hist]),
-    case {length(Failed), length(Hist)} of
-        {Lf, L} when Lf >= L div 2 ->
-            {error, {too_many_failures, Hist}};
-        _ ->
-            ok
-    end;
-majority(N, F, Cfg, Hist) when N > 0 ->
-    Res = try F(Cfg)
-          catch
-              C:R ->
-                  {caught, C, R}
-          after
-              F({cleanup, Cfg})
-          end,
-    majority(N-1, F, Cfg, [Res|Hist]).
-
