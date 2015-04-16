@@ -142,28 +142,35 @@ end_per_testcase(Case, Config) when
       Case == test_folsom_histogram;
       Case == test_history1_folsom;
       Case == test_history4_folsom ->
-    stop_started_apps(Config),
+    _ = stop_started_apps(Config),
     folsom:stop(),
     application:stop(bear),
     ok;
 end_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
-    ok = application:unset_env(common_test, exometer_predefined),
-    ok = application:stop(setup),
-    stop_started_apps(Config),
+    ok = application:unset_env(stdlib, exometer_predefined),
+    _ = stop_started_apps(Config),
     ok;
 end_per_testcase(test_app_predef, Config) ->
+    ok = application:unset_env(app1, exometer_predefined),
     ok = application:stop(app1),
-    stop_started_apps(Config),
+    _ = stop_started_apps(Config),
     ok;
 end_per_testcase(_Case, Config) ->
-    stop_started_apps(Config),
+    _ = stop_started_apps(Config),
     ok.
 
 stop_started_apps(Config) ->
-    [application:stop(App) ||
+    [stop_app(App) ||
         App <- lists:reverse(?config(started_apps, Config))].
+
+stop_app(App) ->
+    case application:stop(App) of
+        ok -> ok;
+        {error, {not_started, _}} ->
+            ok
+    end.
 
 %%%===================================================================
 %%% Test Cases

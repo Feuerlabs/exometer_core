@@ -92,8 +92,8 @@
 
 %% @doc Start exometer and dependent apps (for testing).
 start() ->
-    lager:start(),
-    application:start(exometer_core).
+    {ok,_} = exometer_util:ensure_all_started(exometer_core),
+    ok.
 
 %% @doc Stop exometer and dependent apps (for testing).
 stop() ->
@@ -550,9 +550,28 @@ setopts(Name, Options) when is_list(Name), is_list(Options) ->
             {error, not_found}
     end.
 
-module_setopts(#exometer_entry{behaviour = probe}=E, Options, NewStatus) ->
+module_setopts(#exometer_entry{behaviour = probe,
+                               name = Name,
+                               status = St0} = E, Options, NewStatus) ->
     reporter_setopts(E, Options, NewStatus),
-    exometer_probe:setopts(E, Options, NewStatus);
+    case NewStatus of
+        disabled when ?IS_ENABLED(St0) ->
+            exometer_cache:delete_name(Name),
+            exometer_probe:stop_probe(E),
+            update_entry_elems(Name, [{#exometer_entry.ref, undefined}]);
+        enabled when ?IS_DISABLED(St0) ->
+            %% Previously, probes were not stopped when disabled
+            OldRef = E#exometer_entry.ref,
+            case is_pid(OldRef) andalso is_process_alive(OldRef) of
+                true -> ok;
+                false ->
+                    {ok, Ref} = exometer_probe:start_probe(E),
+                    update_entry_elems(Name, [{#exometer_entry.ref, Ref}])
+            end;
+        _ ->
+            exometer_probe:setopts(E, Options, NewStatus)
+    end,
+    ok;
 
 module_setopts(#exometer_entry{behaviour = entry,
                                module=M} = E, Options, NewStatus) ->
@@ -565,8 +584,8 @@ module_setopts(#exometer_entry{behaviour = entry,
                 ok ->
                     reporter_setopts(E, Options, NewStatus),
                     ok;
-                E ->
-                    E
+                {error,_} = Error ->
+                    Error
             end
     end.
 
@@ -1129,11 +1148,18 @@ create_entry(#exometer_entry{module = exometer,
 create_entry(#exometer_entry{module = Module,
                              type = Type,
                              name = Name,
+                             status = Status,
                              options = Opts} = E) ->
     case
         case Module:behaviour() of
             probe ->
-                {probe, exometer_probe:new(Name, Type, [{ arg, Module} | Opts ]) };
+                if ?IS_ENABLED(Status) ->
+                        {probe, exometer_probe:new(
+                                  Name, Type, [{ arg, Module} | Opts ])};
+                   ?IS_DISABLED(Status) ->
+                        %% Don't start probe if disabled
+                        {probe, ok}
+                end;
             entry ->
                 {entry, Module:new(Name, Type, Opts) };
 

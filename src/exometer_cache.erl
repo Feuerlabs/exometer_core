@@ -16,7 +16,8 @@
 -export([read/2,   %% (Name, DataPoint) -> {ok, Value} | not_found
          write/3,  %% (Name, DataPoint, Value) -> ok
          write/4,  %% (Name, DataPoint, Value, TTL) -> ok
-         delete/2
+         delete/2,
+         delete_name/1
         ]).
 
 -export([init/1,
@@ -62,6 +63,14 @@ write(Name, DataPoint, Value, TTL) ->
 delete(Name, DataPoint) ->
     %% Cancel the timer?
     ets:delete(?TABLE, path(Name, DataPoint)).
+
+delete_name(Name) ->
+    %% This function currently doesn't cancel any timers. The cost of doing
+    %% so would outweigh the cost of reacting to any timers that happen to
+    %% fire (timer-based cleanup matches on TRef, so will not accidentally
+    %% delete the wrong entries.)
+    ets:match_delete(?TABLE, #cache{name = {Name,'_'}, _ = '_'}),
+    ok.
 
 start_timer(Name, TTL, TS) ->
     gen_server:cast(?MODULE, {start_timer, Name, TTL, TS}).
