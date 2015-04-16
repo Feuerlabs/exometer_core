@@ -23,7 +23,9 @@
     test_newentry/1,
     test_subscribe/1,
     test_subscribe_find/1,
-    test_subscribe_select/1
+    test_subscribe_select/1,
+    test_logger_flow_control/1,
+    test_logger_flow_control_2/1
    ]).
 
 -behaviour(exometer_report_logger).
@@ -37,7 +39,8 @@
 
 all() ->
     [
-     {group, test_reporter}
+     {group, test_reporter},
+     {group, test_logger}
     ].
 
 groups() ->
@@ -48,6 +51,11 @@ groups() ->
        test_subscribe,
        test_subscribe_find,
        test_subscribe_select
+      ]},
+     {test_logger, [],
+      [
+       test_logger_flow_control,
+       test_logger_flow_control_2
       ]}
     ].
 
@@ -123,14 +131,21 @@ test_subscribe_select(Config) ->
     [{_,R1},{_,R2},{_,R3}] = ets:tab2list(Tab),
     ok.
 
+test_logger_flow_control(Config) ->
+    ok = test_subscribe_find([{input_port_options, [{active, false}]}|Config]).
+
+test_logger_flow_control_2(Config) ->
+    ok = test_subscribe_find([{input_port_options, [{active, once}]}|Config]).
 
 start_logger_and_reporter(Reporter, Config) ->
     Port = get_port(Config),
+    IPO = config(input_port_options, Config, []),
+    ct:log("IPO = ~p~n", [IPO]),
     Res = exometer_report_logger:new(
             [{id, ?MODULE},
              {input, [{mode, plugin},
                       {module, exometer_test_udp_reporter},
-                      {state, {Port, []}}]},
+                      {state, {Port, IPO}}]},
              {output, [{mode, plugin},
                        {module, exometer_test_udp_reporter}]},
              {output, [{mode, ets}]},
@@ -162,11 +177,14 @@ ets_tab(Info) ->
     T.
 
 get_port(Config) ->
-    case ?config(port, Config) of
+    config(port, Config, ?DEFAULT_PORT).
+
+config(Key, Config, Default) ->
+    case ?config(Key, Config) of
         undefined ->
-            ?DEFAULT_PORT;
-        Port ->
-            Port
+            Default;
+        Value ->
+            Value
     end.
 
 tree_opt([H|T], L) when is_list(L) ->

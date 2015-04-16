@@ -108,10 +108,13 @@ send(Term, #st{socket = Socket, address = Address, port = Port}) ->
 
 logger_init_input({Port, Opts}) ->
     Parent = self(),
-    {ok, spawn_link(fun() ->
-                            {ok, Socket} = gen_udp:open(Port, [binary|Opts]),
-                            input_loop(Socket, Parent)
-                    end)}.
+    {Pid,_} = spawn_monitor(
+                fun() ->
+                        {ok, Socket} = gen_udp:open(Port, [binary|Opts]),
+                        check_active(Socket, Parent),
+                        input_loop(Socket, Parent)
+                end),
+    {ok, Pid}.
 
 logger_init_output(_) ->
     {ok, []}.
@@ -120,8 +123,33 @@ logger_handle_data(Data, St) ->
     {binary_to_term(iolist_to_binary([Data])), St}.
 
 input_loop(Socket, Parent) ->
-    receive
-        {udp, Socket, _Host, _Port, Data} ->
-            Parent ! {plugin, self(), Data}
+    case receive
+             {udp, Socket, _Host, _Port, Data} ->
+                 Parent ! {plugin, self(), Data};
+             {udp_passive, Socket} ->
+                 Parent ! {plugin_passive, self()}, check;
+             {plugin_active, Active} ->
+                 ct:log("{plugin_active, ~p}", [Active]),
+                 inet:setopts(Socket, [{active, Active}])
+         after 1000 ->
+                 io:fwrite(user, "input_loop timeout~n", [])
+         end of
+        check ->
+            check_active(Socket, Parent);
+        _ ->
+            ok
     end,
     input_loop(Socket, Parent).
+
+check_active(Socket, Parent) ->
+    case inet:getopts(Socket, [active]) of
+        {ok, [{active, A}]} ->
+            case A of
+                _ when A==0; A==false; A==once ->
+                    Parent ! {plugin_passive, self()};
+                _ ->
+                    ok
+            end;
+        _ ->
+            ok
+    end.
