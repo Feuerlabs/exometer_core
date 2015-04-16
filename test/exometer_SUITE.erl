@@ -49,6 +49,8 @@
     vals/0
    ]).
 
+-import(exometer_test_util, [majority/3]).
+
 -include_lib("common_test/include/ct.hrl").
 
 %%%===================================================================
@@ -276,8 +278,15 @@ test_std_histogram(_Config) ->
      {50,2},{75,3},{90,4},{95,5},{99,8},{999,9}] = scale_mean(DPs),
     ok.
 
-test_slot_histogram(_Config) ->
+test_slot_histogram(Config) ->
     C = [?MODULE, hist, ?LINE],
+    ok = majority(5, fun test_slot_histogram_/1, [{metric_name, C}|Config]).
+
+test_slot_histogram_({cleanup, Config}) ->
+    C = ?config(metric_name, Config),
+    exometer:delete(C);
+test_slot_histogram_(Config) ->
+    C = ?config(metric_name, Config),
     ok = exometer:new(C, histogram, [{histogram_module, exometer_slot_slide},
 				     {keep_high, 100},
                                      {truncate, false}]),
