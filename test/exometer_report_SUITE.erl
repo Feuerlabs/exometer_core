@@ -161,7 +161,7 @@ test_logger_flow_control_2(Config) ->
 
 start_logger_and_reporter(Reporter, Config) ->
     Port = get_port(Config),
-    IPO = config(input_port_options, Config, []),
+    IPO = ensure_reuse(config(input_port_options, Config, [])),
     ct:log("IPO = ~p~n", [IPO]),
     Res = exometer_report_logger:new(
             [{id, ?MODULE},
@@ -184,6 +184,14 @@ start_logger_and_reporter(Reporter, Config) ->
             {port, Port},
             {intervals, [{main, manual}]}]),
     {ok, Info}.
+
+ensure_reuse(Opts) ->
+    case lists:keyfind(reuseaddr, 1, Opts) of
+        {_, _} ->
+            Opts;
+        false ->
+            [{reuseaddr, true}|Opts]
+    end.
 
 check_logger_msg() ->
     receive
