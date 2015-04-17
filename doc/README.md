@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Basho Technologies, Inc.  All Rights Reserved.
 
-__Version:__ Dec 3 2014 19:51:33
+__Version:__ Apr 17 2015 14:08:02
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 
@@ -474,6 +474,13 @@ Exometer Core defaults can be changed either through OTP application environment
 variables or through the use of Basho's `cuttlefish`
 ([`https://github.com/basho/cuttlefish`](https://github.com/basho/cuttlefish)).
 
+__Note:__ Exometer Core will check both the `exometer` and the `exometer_core`
+application environments. The `exometer` environment overrides the
+`exometer_core` environment. However, if only `exometer_core` is used, any
+`exometer` environment will simply be ignored. This is because of the
+application controller: environment data is not loaded until the application
+in question is loaded.
+
 
 #### <a name="Configuring_type_-_entry_maps">Configuring type - entry maps</a> ####
 
@@ -734,6 +741,7 @@ processing is complete.
 <tr><td><a href="exometer_proc.md" class="module">exometer_proc</a></td></tr>
 <tr><td><a href="exometer_report.md" class="module">exometer_report</a></td></tr>
 <tr><td><a href="exometer_report_lager.md" class="module">exometer_report_lager</a></td></tr>
+<tr><td><a href="exometer_report_logger.md" class="module">exometer_report_logger</a></td></tr>
 <tr><td><a href="exometer_report_tty.md" class="module">exometer_report_tty</a></td></tr>
 <tr><td><a href="exometer_shallowtree.md" class="module">exometer_shallowtree</a></td></tr>
 <tr><td><a href="exometer_slide.md" class="module">exometer_slide</a></td></tr>

@@ -7,6 +7,7 @@
 %%   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 %%
 %% -------------------------------------------------------------------
+%% @private
 -module(exometer_report_logger_sup).
 
 -behaviour(supervisor).

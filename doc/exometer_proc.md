@@ -37,7 +37,7 @@ following messages:
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#call-2">call/2</a></td><td>Make a synchronous call to an <code>exometer_proc</code> process.</td></tr><tr><td valign="top"><a href="#cast-2">cast/2</a></td><td>Send an asynchronous message to an <code>exometer_proc</code> process.</td></tr><tr><td valign="top"><a href="#format_status-2">format_status/2</a></td><td></td></tr><tr><td valign="top"><a href="#handle_system_msg-4">handle_system_msg/4</a></td><td></td></tr><tr><td valign="top"><a href="#process_options-1">process_options/1</a></td><td>Apply process_flag-specific options.</td></tr><tr><td valign="top"><a href="#spawn_process-2">spawn_process/2</a></td><td>Spawn an <code>exometer_proc</code> process.</td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></td><td>Terminate probe process in an orderly way.</td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#call-2">call/2</a></td><td>Make a synchronous call to an <code>exometer_proc</code> process.</td></tr><tr><td valign="top"><a href="#cast-2">cast/2</a></td><td>Send an asynchronous message to an <code>exometer_proc</code> process.</td></tr><tr><td valign="top"><a href="#format_status-2">format_status/2</a></td><td></td></tr><tr><td valign="top"><a href="#handle_system_msg-4">handle_system_msg/4</a></td><td></td></tr><tr><td valign="top"><a href="#process_options-1">process_options/1</a></td><td>Apply process_flag-specific options.</td></tr><tr><td valign="top"><a href="#spawn_process-2">spawn_process/2</a></td><td>Spawn an <code>exometer_proc</code> process.</td></tr><tr><td valign="top"><a href="#spawn_process-3">spawn_process/3</a></td><td></td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></td><td>Terminate probe process in an orderly way.</td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -130,6 +130,13 @@ Spawn an `exometer_proc` process.
 This function sets up appropriate monitoring, and calls the function `F`
 which needs to initialize the probe and enter an event loop.
 (Note: `exometer_proc` processes are responsible for their own event loop).
+<a name="spawn_process-3"></a>
+
+### spawn_process/3 ###
+
+`spawn_process(Name, F, Opts) -> any()`
+
+
 <a name="stop-0"></a>
 
 ### stop/0 ###

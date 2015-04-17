@@ -369,7 +369,7 @@ time_ms() = pos_integer()
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#add_reporter-2">add_reporter/2</a></td><td>Add a reporter.</td></tr><tr><td valign="top"><a href="#call_reporter-2">call_reporter/2</a></td><td>Send a custom (synchronous) call to <code>Reporter</code>.</td></tr><tr><td valign="top"><a href="#cast_reporter-2">cast_reporter/2</a></td><td>Send a custom (asynchronous) cast to <code>Reporter</code>.</td></tr><tr><td valign="top"><a href="#delete_interval-2">delete_interval/2</a></td><td>Delete a named interval.</td></tr><tr><td valign="top"><a href="#disable_me-2">disable_me/2</a></td><td>Used by a reporter to disable itself.</td></tr><tr><td valign="top"><a href="#disable_reporter-1">disable_reporter/1</a></td><td>Disable <code>Reporter</code>.</td></tr><tr><td valign="top"><a href="#enable_reporter-1">enable_reporter/1</a></td><td>Enable <code>Reporter</code>.</td></tr><tr><td valign="top"><a href="#get_intervals-1">get_intervals/1</a></td><td>List the named intervals for <code>Reporter</code>.</td></tr><tr><td valign="top"><a href="#list_metrics-0">list_metrics/0</a></td><td>Equivalent to <a href="#list_metrics-1"><tt>list_metrics([])</tt></a>.</td></tr><tr><td valign="top"><a href="#list_metrics-1">list_metrics/1</a></td><td>List all metrics matching <code>Path</code>, together with subscription status.</td></tr><tr><td valign="top"><a href="#list_reporters-0">list_reporters/0</a></td><td>List the name and pid of each known reporter.</td></tr><tr><td valign="top"><a href="#list_subscriptions-1">list_subscriptions/1</a></td><td>List all subscriptions for <code>Reporter</code>.</td></tr><tr><td valign="top"><a href="#new_entry-1">new_entry/1</a></td><td>Called by exometer whenever a new entry is created.</td></tr><tr><td valign="top"><a href="#remove_reporter-1">remove_reporter/1</a></td><td>Remove reporter and all its subscriptions.</td></tr><tr><td valign="top"><a href="#remove_reporter-2">remove_reporter/2</a></td><td>Remove <code>Reporter</code> (non-blocking call).</td></tr><tr><td valign="top"><a href="#restart_intervals-1">restart_intervals/1</a></td><td>Restart all named intervals, respecting specified delays.</td></tr><tr><td valign="top"><a href="#set_interval-3">set_interval/3</a></td><td>Specify a named interval.</td></tr><tr><td valign="top"><a href="#setopts-3">setopts/3</a></td><td>Called by exometer when options of a metric entry are changed.</td></tr><tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td>Starts the server
 --------------------------------------------------------------------.</td></tr><tr><td valign="top"><a href="#start_reporters-0">start_reporters/0</a></td><td></td></tr><tr><td valign="top"><a href="#subscribe-4">subscribe/4</a></td><td>Equivalent to <a href="#subscribe-6"><tt>subscribe(Reporter, Metric, DataPoint, Interval, [],
 false)</tt></a>.</td></tr><tr><td valign="top"><a href="#subscribe-5">subscribe/5</a></td><td>Equivalent to <a href="#subscribe-6"><tt>subscribe(Reporter, Metric, DataPoint, Interval, Extra,
-false)</tt></a>.</td></tr><tr><td valign="top"><a href="#subscribe-6">subscribe/6</a></td><td>Add a subscription to an existing reporter.</td></tr><tr><td valign="top"><a href="#terminate_reporter-1">terminate_reporter/1</a></td><td></td></tr><tr><td valign="top"><a href="#unsubscribe-3">unsubscribe/3</a></td><td>Equivalent to <a href="#unsubscribe-4"><tt>unsubscribe(Reporter, Metric, DataPoint, [])</tt></a>.</td></tr><tr><td valign="top"><a href="#unsubscribe-4">unsubscribe/4</a></td><td>Removes a subscription.</td></tr><tr><td valign="top"><a href="#unsubscribe_all-2">unsubscribe_all/2</a></td><td>Removes all subscriptions related to Metric in Reporter.</td></tr></table>
+false)</tt></a>.</td></tr><tr><td valign="top"><a href="#subscribe-6">subscribe/6</a></td><td>Add a subscription to an existing reporter.</td></tr><tr><td valign="top"><a href="#terminate_reporter-1">terminate_reporter/1</a></td><td></td></tr><tr><td valign="top"><a href="#trigger_interval-2">trigger_interval/2</a></td><td>Trigger a named interval.</td></tr><tr><td valign="top"><a href="#unsubscribe-3">unsubscribe/3</a></td><td>Equivalent to <a href="#unsubscribe-4"><tt>unsubscribe(Reporter, Metric, DataPoint, [])</tt></a>.</td></tr><tr><td valign="top"><a href="#unsubscribe-4">unsubscribe/4</a></td><td>Removes a subscription.</td></tr><tr><td valign="top"><a href="#unsubscribe_all-2">unsubscribe_all/2</a></td><td>Removes all subscriptions related to Metric in Reporter.</td></tr></table>
 
 
 <a name="functions"></a>
@@ -412,12 +412,19 @@ subscriptions to the reporter.
 `{intervals, [named_interval()]}`
 named_interval() :: {Name::atom(), Interval::pos_integer()}
 | {Name::atom(), Interval::time_ms(), delay()::time_ms()}
+| {Name::atom(), 'manual'}
 Define named intervals. The name can be used by subscribers, so that all
 subsriptions for a given named interval will be reported when the interval
 triggers. An optional delay (in ms) can be given: this will cause the first
 interval to start in `Delay` milliseconds. When all intervals are named
 at the same time, the delay parameter can be used to achieve staggered
-reporting.
+reporting. If the interval is specified as 
+```
+  'manual
+```
+', it will have
+to be triggered manually using [`trigger_interval/2`](#trigger_interval-2).
+
 <a name="call_reporter-2"></a>
 
 ### call_reporter/2 ###
@@ -656,10 +663,16 @@ set_interval(Reporter::<a href="#type-reporter_name">reporter_name()</a>, Name::
 Specify a named interval.
 
 
-
 See [`add_reporter/2`](#add_reporter-2) for a description of named intervals.
 The named interval is here specified as either `Time` (milliseconds) or
-`{Time, Delay}`, where a delay in milliseconds is provided.
+`{Time, Delay}`, where a delay in milliseconds is provided. It is also
+specify an interval as 
+```
+  'manual
+```
+
+', indicating that the interval can
+only be triggered manually via [`trigger_interval/2`](#trigger_interval-2).
 
 
 If the named interval exists, it will be replaced with the new definition.
@@ -765,6 +778,28 @@ even if the metric cannot be read.
 `terminate_reporter(Reporter) -> any()`
 
 
+<a name="trigger_interval-2"></a>
+
+### trigger_interval/2 ###
+
+
+<pre><code>
+trigger_interval(Reporter::<a href="#type-reporter_name">reporter_name()</a>, Name::atom()) -&gt; ok
+</code></pre>
+<br />
+
+
+Trigger a named interval.
+
+
+This function is mainly used to trigger intervals defined as 
+```
+  'manual
+```
+',
+but can be used to trigger any named interval. If a named interval with
+a specified time in milliseconds is triggered this way, it will effectively
+be restarted, and will repeat as usual from that point on.
 <a name="unsubscribe-3"></a>
 
 ### unsubscribe/3 ###

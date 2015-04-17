@@ -603,15 +603,53 @@ process when it receives a message that is not recognized by the
 internal receive loop.
 
 
+
 The implementation of `probe_handle_msg/2` shall return `{ok,
 NewState}`, where `NewState` contains the new state of the probe
 that reflects the processed message.
+
+
+
+
+### <a name="Fault_tolerance">Fault tolerance</a> ###
+
+
+Probes are supervised by the `exometer_admin` process, and can be restarted
+after a crash. Restart parameters are provided via the option
+`{restart, Params}`, where `Params` is a list of `{Frequency, Action}`
+tuples. `Frequency` is either `{Count, MilliSecs}` or `'_`', and
+the corresponding `Action :: restart | disable | delete` will be performed
+if the frequency of restarts falls within the given limit.
+
+
+
+For example, `[{{3, 1000}, restart}]` will allow 3 restarts within a 1-second
+window. The matching is performed from top to bottom, and the first matching
+pattern is acted upon. If no matching pattern is found, the default action
+is `delete`. A pattern `{'_', Action}` acts as a catch-all, and should
+be put last in the list.
+
+
+
+It is also possible to specify `{{Count, '_'}, Action}`, which means
+that a total of `Count` restarts is permitted, regardless of how far apart
+they are. The count is reset after each restart.
+
+
+Example:
+
+```erlang
+
+    {restart, [{{3,1000}, restart},   % up to 3 restarts within 1 sec
+               {{4,'_'} , disable},   % a total of up to 4 restarts
+               {'_'     , delete}]}   % anything else
+```
 <a name="index"></a>
 
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#behaviour-0">behaviour/0</a></td><td></td></tr><tr><td valign="top"><a href="#delete-3">delete/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_datapoints-3">get_datapoints/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_value-3">get_value/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_value-4">get_value/4</a></td><td></td></tr><tr><td valign="top"><a href="#new-3">new/3</a></td><td></td></tr><tr><td valign="top"><a href="#reset-3">reset/3</a></td><td></td></tr><tr><td valign="top"><a href="#sample-3">sample/3</a></td><td></td></tr><tr><td valign="top"><a href="#setopts-3">setopts/3</a></td><td></td></tr><tr><td valign="top"><a href="#update-4">update/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#behaviour-0">behaviour/0</a></td><td></td></tr><tr><td valign="top"><a href="#delete-3">delete/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_datapoints-3">get_datapoints/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_value-3">get_value/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_value-4">get_value/4</a></td><td></td></tr><tr><td valign="top"><a href="#new-3">new/3</a></td><td></td></tr><tr><td valign="top"><a href="#reset-3">reset/3</a></td><td></td></tr><tr><td valign="top"><a href="#restart-4">restart/4</a></td><td></td></tr><tr><td valign="top"><a href="#sample-3">sample/3</a></td><td></td></tr><tr><td valign="top"><a href="#setopts-3">setopts/3</a></td><td></td></tr><tr><td valign="top"><a href="#update-4">update/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -665,6 +703,13 @@ that reflects the processed message.
 ### reset/3 ###
 
 `reset(Name, Type, Pid) -> any()`
+
+
+<a name="restart-4"></a>
+
+### restart/4 ###
+
+`restart(Name, Module, Error, SpawnOpts) -> any()`
 
 
 <a name="sample-3"></a>
