@@ -1,6 +1,7 @@
 -module(exometer_test_util).
 
 -export([ensure_all_started/1,
+         majority/2,
          majority/3]).
 
 %% This implementation is originally from Basho's Webmachine. On
@@ -33,6 +34,9 @@ ensure_all_started(App, Apps0) ->
             {ok, Apps} = ensure_all_started(BaseApp, Apps0),
             ensure_all_started(App, [BaseApp|Apps])
     end.
+
+majority(F, Cfg) ->
+    majority(5, F, Cfg).
 
 %% Run test N times. Success if a majority of the tests succeed.
 %% Cleanup between runs done by calling F({cleanup, Config})

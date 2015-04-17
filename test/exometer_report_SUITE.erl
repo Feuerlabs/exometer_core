@@ -32,6 +32,8 @@
 -export([logger_init_output/1,
          logger_handle_data/2]).
 
+-import(exometer_test_util, [majority/2]).
+
 -include_lib("common_test/include/ct.hrl").
 -include_lib("exometer_core/include/exometer.hrl").
 
@@ -80,6 +82,11 @@ stop_started_apps(Config) ->
         App <- lists:reverse(?config(started_apps, Config))].
 
 test_newentry(Config) ->
+    majority(fun test_newentry_/1, Config).
+
+test_newentry_({cleanup, Config}) ->
+    restart_exometer_core();
+test_newentry_(Config) ->
     {ok, Info} = start_logger_and_reporter(test_udp, Config),
     Tab = ets_tab(Info),
     [] = ets:tab2list(Tab),
@@ -91,6 +98,11 @@ test_newentry(Config) ->
     ok.
 
 test_subscribe(Config) ->
+    majority(fun test_subscribe_/1, Config).
+
+test_subscribe_({cleanup, _Config}) ->
+    restart_exometer_core();
+test_subscribe_(Config) ->
     ok = exometer:new([c], counter, []),
     {ok, _Info} = start_logger_and_reporter(test_udp, Config),
     exometer_report:subscribe(test_udp, [c], value, main, true),
@@ -100,6 +112,11 @@ test_subscribe(Config) ->
     ok.
 
 test_subscribe_find(Config) ->
+    majority(fun test_subscribe_find_/1, Config).
+
+test_subscribe_find_({cleanup, _Config}) ->
+    restart_exometer_core();
+test_subscribe_find_(Config) ->
     ok = exometer:new([c,1], counter, []),
     ok = exometer:new([c,2], counter, []),
     {ok, Info} = start_logger_and_reporter(test_udp, Config),
@@ -114,6 +131,11 @@ test_subscribe_find(Config) ->
     ok.
 
 test_subscribe_select(Config) ->
+    majority(fun test_subscribe_select_/1, Config).
+
+test_subscribe_select_({cleanup, _Config}) ->
+    restart_exometer_core();
+test_subscribe_select_(Config) ->
     ok = exometer:new([c,1], counter, []),
     ok = exometer:new([c,2], counter, []),
     ok = exometer:new([c,3], counter, []),
@@ -168,7 +190,7 @@ check_logger_msg() ->
         {logger_got, Data} ->
             ct:log("logger_got: ~p~n", [Data]),
             Data
-    after 1000 ->
+    after 5000 ->
             error(logger_ack_timeout)
     end.
 
@@ -208,3 +230,7 @@ logger_init_output(Pid) ->
 logger_handle_data(Data, Pid) ->
     Pid ! {logger_got, Data},
     {Data, Pid}.
+
+restart_exometer_core() ->
+    application:stop(exometer_core),
+    application:start(exometer_core).

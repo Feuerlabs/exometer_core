@@ -25,6 +25,8 @@
     test_escalation_2/1
    ]).
 
+-import(exometer_test_util, [majority/2]).
+
 -include_lib("common_test/include/ct.hrl").
 
 %%%===================================================================
@@ -56,7 +58,7 @@ init_per_suite(Config) ->
 end_per_suite(_Config) ->
     ok.
 
-init_per_testcase(Case, Config) ->
+init_per_testcase(_Case, Config) ->
     {ok, Started} = exometer_test_util:ensure_all_started(exometer_core),
     ct:log("Started: ~p~n", [[{T, catch ets:tab2list(T)}
                               || T <- exometer_util:tables()]]),
@@ -80,14 +82,27 @@ stop_app(App) ->
 %%%===================================================================
 %%% Test Cases
 %%%===================================================================
-test_failing_probe(_Config) ->
+test_failing_probe(Config) ->
     M = [?MODULE, ?LINE],
+    majority(fun test_failing_probe_/1, [{metric_name, M}|Config]).
+
+test_failing_probe_({cleanup, Config}) ->
+    M = ?config(metric_name, Config),
+    exometer:delete(M);
+test_failing_probe_(Config) ->
+    M = ?config(metric_name, Config),
     ok = exometer:new(M, histogram, []),
     true = killed_probe_restarts(M),
     ok.
 
-test_escalation_1(_Config) ->
+test_escalation_1(Config) ->
     M = [?MODULE, ?LINE],
+    majority(fun test_escalation_1_/1, [{metric_name, M}|Config]).
+
+test_escalation_1_({cleanup, Config}) ->
+    exometer:delete(?config(metric_name, Config));
+test_escalation_1_(Config) ->
+    M = ?config(metric_name, Config),
     Levels = [{{3,5000}, restart},
               {'_', disable}],
     ok = exometer:new(M, histogram, [{restart, Levels}]),
@@ -97,8 +112,14 @@ test_escalation_1(_Config) ->
     true = killed_probe_disabled(M),
     ok.
 
-test_escalation_2(_Config) ->
+test_escalation_2(Config) ->
     M = [?MODULE, ?LINE],
+    majority(fun test_escalation_2_/1, [{metric_name, M}|Config]).
+
+test_escalation_2_({cleanup, Config}) ->
+    exometer:delete(?config(metric_name, Config));
+test_escalation_2_(Config) ->
+    M = ?config(metric_name, Config),
     Levels = [{{3,5000}, restart},
               {'_', delete}],
     ok = exometer:new(M, histogram, [{restart, Levels}]),
@@ -141,7 +162,10 @@ killed_probe_deleted(M) ->
 
 await_death(Pid) ->
     Ref = erlang:send_after(1000, self(), zombie),
-    await_death(Pid, Ref).
+    await_death(Pid, Ref),
+    %% Now ping exometer_admin twice to give it time to handle the DOWN msg
+    sys:get_status(exometer_admin),
+    sys:get_status(exometer_admin).
 
 await_death(Pid, Ref) ->
     case erlang:read_timer(Ref) of

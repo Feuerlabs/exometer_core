@@ -131,7 +131,7 @@ input_loop(Socket, Parent) ->
              {plugin_active, Active} ->
                  ct:log("{plugin_active, ~p}", [Active]),
                  inet:setopts(Socket, [{active, Active}])
-         after 1000 ->
+         after 5000 ->
                  io:fwrite(user, "input_loop timeout~n", [])
          end of
         check ->
