@@ -583,9 +583,10 @@ default_restart() ->
 behaviour() ->
     entry.
 
+delete(_Name, _Type, undefined) ->
+    ok;
 delete(_Name, _Type, Pid) when is_pid(Pid) ->
     exometer_proc:cast(Pid, delete).
-
 
 get_value(_Name, _Type, Pid) when is_pid(Pid) ->
     exometer_proc:call(Pid, {get_value, default}).

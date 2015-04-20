@@ -110,6 +110,7 @@ logger_init_input({Port, Opts}) ->
     Parent = self(),
     {Pid,_} = spawn_monitor(
                 fun() ->
+                        erlang:monitor(process, Parent),
                         {ok, Socket} = gen_udp:open(Port, [binary|Opts]),
                         check_active(Socket, Parent),
                         input_loop(Socket, Parent)
@@ -130,8 +131,10 @@ input_loop(Socket, Parent) ->
                  Parent ! {plugin_passive, self()}, check;
              {plugin_active, Active} ->
                  ct:log("{plugin_active, ~p}", [Active]),
-                 inet:setopts(Socket, [{active, Active}])
-         after 1000 ->
+                 inet:setopts(Socket, [{active, Active}]);
+             {'DOWN', _, process, Parent, _} ->
+                 exit(normal)
+         after 5000 ->
                  io:fwrite(user, "input_loop timeout~n", [])
          end of
         check ->
