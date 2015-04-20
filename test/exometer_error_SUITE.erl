@@ -133,7 +133,7 @@ killed_probe_restarts(M) ->
     Pid = exometer:info(M, ref),
     ct:log("Pid = ~p~n", [Pid]),
     exit(Pid, kill),
-    ok = await_death(Pid),
+    await_death(Pid),
     NewPid = exometer:info(M, ref),
     ct:log("NewPid = ~p~n", [NewPid]),
     enabled = exometer:info(M, status),
@@ -143,7 +143,7 @@ killed_probe_disabled(M) ->
     Pid = exometer:info(M, ref),
     ct:log("Pid = ~p~n", [Pid]),
     exit(Pid, kill),
-    ok = await_death(Pid),
+    await_death(Pid),
     undefined = exometer:info(M, ref),
     ct:log("Ref = undefined~n", []),
     disabled = exometer:info(M, status),
@@ -153,7 +153,7 @@ killed_probe_deleted(M) ->
     Pid = exometer:info(M, ref),
     ct:log("Pid = ~p~n", [Pid]),
     exit(Pid, kill),
-    ok = await_death(Pid),
+    await_death(Pid),
     ct:log("Ets = ~p~n", [[{T,ets:tab2list(T)} ||
                               T <- exometer_util:tables()]]),
     {error, not_found} = exometer:get_value(M),
@@ -165,7 +165,8 @@ await_death(Pid) ->
     await_death(Pid, Ref),
     %% Now ping exometer_admin twice to give it time to handle the DOWN msg
     sys:get_status(exometer_admin),
-    sys:get_status(exometer_admin).
+    sys:get_status(exometer_admin),
+    ok.
 
 await_death(Pid, Ref) ->
     case erlang:read_timer(Ref) of
@@ -178,8 +179,8 @@ await_death(Pid, Ref) ->
                     await_death(Pid, Ref);
                 false ->
                     erlang:cancel_timer(Ref),
-                    _ = sys:get_status(exometer_admin),
-                    _ = sys:get_status(exometer_admin),
+                    sys:get_status(exometer_admin),
+                    sys:get_status(exometer_admin),
                     ok
             end
     end.
