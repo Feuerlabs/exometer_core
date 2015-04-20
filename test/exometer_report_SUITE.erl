@@ -154,10 +154,10 @@ test_subscribe_select_(Config) ->
     ok.
 
 test_logger_flow_control(Config) ->
-    ok = test_subscribe_find([{input_port_options, [{active, false}]}|Config]).
+    test_subscribe_find([{input_port_options, [{active, false}]}|Config]).
 
 test_logger_flow_control_2(Config) ->
-    ok = test_subscribe_find([{input_port_options, [{active, once}]}|Config]).
+    test_subscribe_find([{input_port_options, [{active, once}]}|Config]).
 
 start_logger_and_reporter(Reporter, Config) ->
     Port = get_port(Config),

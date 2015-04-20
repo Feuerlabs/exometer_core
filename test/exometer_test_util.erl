@@ -4,6 +4,9 @@
          majority/2,
          majority/3]).
 
+-define(MAJORITY_COUNT_ENV, "CT_MAJORITY_COUNT").
+-define(DEFAULT_MAJORITY_COUNT, 5).
+
 %% This implementation is originally from Basho's Webmachine. On
 %% older versions of Erlang, we don't have
 %% application:ensure_all_started, so we use this wrapper function to
@@ -36,7 +39,18 @@ ensure_all_started(App, Apps0) ->
     end.
 
 majority(F, Cfg) ->
-    majority(5, F, Cfg).
+    case os:getenv(?MAJORITY_COUNT_ENV) of
+        false ->
+            majority(?DEFAULT_MAJORITY_COUNT, F, Cfg);
+        Count ->
+            case catch erlang:list_to_integer(Count) of
+                C when is_integer(C) ->
+                    majority(C, F, Cfg);
+                _ ->
+                    ct:pal("Invalid value for '~s' given", [?MAJORITY_COUNT_ENV]),
+                    majority(?DEFAULT_MAJORITY_COUNT, F, Cfg)
+            end
+    end.
 
 %% Run test N times. Success if a majority of the tests succeed.
 %% Cleanup between runs done by calling F({cleanup, Config})
@@ -46,13 +60,14 @@ majority(N, F, Cfg) ->
     majority(N, F, Cfg, []).
 
 majority(0, _, _, Hist) ->
-    Failed = [1 || {caught,_,_} <- Hist],
-    ct:log("majority(): Failed = ~p, Hist=~p~n", [Failed, Hist]),
-    case {length(Failed), length(Hist)} of
+    Failed = length([1 || {caught,_,_} <- Hist]),
+    LogMsg = lists:flatten(io_lib:format("majority: Failed = ~p, Hist = ~p", [Failed, Hist])),
+    ct:pal(LogMsg),
+    case {Failed, length(Hist)} of
         {Lf, L} when Lf >= L div 2 ->
-            {error, {too_many_failures, Hist}};
+            ct:fail({error, {too_many_failures, Hist}});
         _ ->
-            ok
+            {comment, LogMsg}
     end;
 majority(N, F, Cfg, Hist) when N > 0 ->
     Res = try F(Cfg)

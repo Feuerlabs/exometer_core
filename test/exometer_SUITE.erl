@@ -280,7 +280,7 @@ test_std_histogram(_Config) ->
 
 test_slot_histogram(Config) ->
     C = [?MODULE, hist, ?LINE],
-    ok = majority(fun test_slot_histogram_/1, [{metric_name, C}|Config]).
+    majority(fun test_slot_histogram_/1, [{metric_name, C}|Config]).
 
 test_slot_histogram_({cleanup, Config}) ->
     C = ?config(metric_name, Config),
