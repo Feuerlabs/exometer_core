@@ -446,7 +446,7 @@ remove_reporter(Reporter) ->
     call({remove_reporter, Reporter}).
 
 -spec set_interval(reporter_name(), atom(),
-                   time_ms() | {time_ms(), delay()}) -> ok |error().
+                   time_ms() | {time_ms(), delay()} | manual) -> ok |error().
 %% @doc Specify a named interval.
 %%
 %% See {@link add_reporter/2} for a description of named intervals.
