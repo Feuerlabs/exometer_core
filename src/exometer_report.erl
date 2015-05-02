@@ -1157,13 +1157,10 @@ do_report(#key{metric = Metric,
             true;
         %% We did not find a value, but we should try again.
         {true, _ } ->
-            if is_list(Metric) ->
             ?debug("Metric(~p) Datapoint(~p) not found."
                    " Will try again in ~p msec~n",
                    [Metric, DataPoint, Interval]),
             true;
-               true -> false
-            end;
         %% We did not find a value, and we should not retry.
         _ ->
             %% Entry removed while timer in progress.
