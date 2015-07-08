@@ -304,7 +304,7 @@ start_link() ->
 
 -spec subscribe(reporter_name(), metric(), datapoints(), interval()) ->
                        ok | not_found | unknown_reporter | error.
-%% @equiv subscribe(Reporter, Metric, DataPoint, Interval, [], false)
+%% @equiv subscribe(Reporter, Metric, DataPoint, Interval, [], true)
 subscribe(Reporter, Metric, DataPoint, Interval) ->
     subscribe(Reporter, Metric, DataPoint, Interval, []).
 
@@ -315,7 +315,7 @@ subscribe(Reporter, Metric, DataPoint, Interval, Extra) ->
     call({subscribe, #key{reporter = Reporter,
                           metric = Metric,
                           datapoint = DataPoint,
-                          retry_failed_metrics = false,
+                          retry_failed_metrics = true,
                           extra = Extra}, Interval}).
 
 -spec subscribe(reporter_name(), metric(), datapoints(), interval(),
