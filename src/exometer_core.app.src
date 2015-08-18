@@ -9,7 +9,8 @@
     kernel,
     stdlib,
     lager,
-    setup
+    setup,
+    folsom
    ]},
   {included_applications,
    [
