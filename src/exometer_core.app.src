@@ -16,8 +16,8 @@
    [
    ]},
   {mod, {exometer_core_app, []}},
-  {start_phases, [{preset_defaults, []},
-                  {start_reporters, []}]},
+  {start_phases, [{start_reporters, []},
+                  {preset_defaults, []}]},
   {env,
    [
    ]}
