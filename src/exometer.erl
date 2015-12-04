@@ -650,33 +650,34 @@ update_entry_elems(Name, Elems) ->
 %% * `cache' - The cache lifetime
 %% * `status' - Operational status: `enabled' or `disabled'
 %% * `timestamp' - When the metric was last reset/initiated
-%% * `datapoitns' - Data points available for retrieval with get_value()
+%% * `datapoints' - Data points available for retrieval with get_value()
 %% * `options' - Options passed to the metric at creation (or via setopts())
 %% * `ref' - Instance-specific reference; usually a pid (probe) or undefined
 %% @end
-info(#exometer_entry{} = E, Item) ->
-    info_(E, Item);
+info(#exometer_entry{status = Status} = E, Item) ->
+    info_(E, Item, info_status(Status));
 info(Name, Item) ->
     case ets:lookup(exometer_util:table(), Name) of
-        [#exometer_entry{} = E] ->
-            info_(E, Item);
+        [#exometer_entry{status = Status0} = E] ->
+            Status = info_status(Status0),
+            info_(E, Item, Status);
         _ ->
             undefined
     end.
 
-info_(E, Item) ->
-    case Item of
-        name      -> E#exometer_entry.name;
-        type      -> E#exometer_entry.type;
-        module    -> E#exometer_entry.module;
-        value     -> get_value_(E,[]);
-        cache     -> E#exometer_entry.cache;
-        status    -> info_status(E#exometer_entry.status);
-        timestamp -> E#exometer_entry.timestamp;
-        options   -> E#exometer_entry.options;
-        ref       -> E#exometer_entry.ref;
-        entry     -> E;
-        datapoints-> exometer_util:get_datapoints(E);
+info_(E, Item, Status) ->
+    case {Item, Status} of
+        {name,             _} -> E#exometer_entry.name;
+        {type,             _} -> E#exometer_entry.type;
+        {module,           _} -> E#exometer_entry.module;
+        {value,      enabled} -> get_value_(E,[]);
+        {cache,      enabled} -> E#exometer_entry.cache;
+        {status,           _} -> Status;
+        {timestamp,  enabled} -> E#exometer_entry.timestamp;
+        {options,          _} -> E#exometer_entry.options;
+        {ref,              _} -> E#exometer_entry.ref;
+        {entry,            _} -> E;
+        {datapoints, enabled} -> exometer_util:get_datapoints(E);
         _ -> undefined
     end.
 
@@ -698,20 +699,13 @@ datapoints(D, _) when is_list(D) ->
 %% @doc Returns a list of info items for Metric, see {@link info/2}.
 info(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
-        [#exometer_entry{} = E0] ->
-            E = info_set_status(E0),
+        [#exometer_entry{status = Status0} = E] ->
+            Status = info_status(Status0),
             Flds = record_info(fields, exometer_entry),
-            lists:keyreplace(value, 1,
-                             lists:zip(Flds, tl(tuple_to_list(E))) ++
-                                 [ {datapoints,
-                                    exometer_util:get_datapoints(E)}],
-                             {value, get_value_(E, [])});
+            lists:map(fun(Item) -> {Item, info_(E, Item, Status)} end, Flds);
         _ ->
             undefined
     end.
-
-info_set_status(#exometer_entry{status = S} = E) ->
-    E#exometer_entry{status = info_status(S)}.
 
 -spec find_entries([any() | '_']) -> [{name(), type(), status()}].
 %% @doc Find metrics based on a name prefix pattern.
