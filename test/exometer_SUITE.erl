@@ -417,7 +417,7 @@ test_status(_Config) ->
      {module, exometer_histogram},
      {status, enabled},
      {cache, 0},
-     {value, []},
+     {value, _},
      {timestamp, undefined},
      {options, Opts1},
      {ref, _}] = exometer:info(M1),
