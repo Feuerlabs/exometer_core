@@ -670,7 +670,7 @@ info_(E, Item, Status) ->
         {name,             _} -> E#exometer_entry.name;
         {type,             _} -> E#exometer_entry.type;
         {module,           _} -> E#exometer_entry.module;
-        {value,      enabled} -> get_value_(E,[]);
+        {value,      enabled} -> get_value_(E, exometer_util:get_datapoints(E));
         {cache,      enabled} -> E#exometer_entry.cache;
         {status,           _} -> Status;
         {timestamp,  enabled} -> E#exometer_entry.timestamp;
