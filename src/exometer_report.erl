@@ -1397,19 +1397,19 @@ assert_no_duplicates([]) ->
 -spec spawn_reporter(reporter_name(), options()) -> {pid(), reference()}.
 spawn_reporter(Reporter, Opt) when is_atom(Reporter), is_list(Opt) ->
     Fun = fun() ->
-                  maybe_register(Reporter, Opt),
                   {ok, Mod, St} = reporter_init(Reporter, Opt),
                   reporter_loop(Mod, St)
           end,
     Pid = proc_lib:spawn(Fun),
+    maybe_register(Reporter, Pid, Opt),
     MRef = erlang:monitor(process, Pid),
     {Pid, MRef}.
 
-maybe_register(R, Opts) ->
+maybe_register(R, Pid, Opts) ->
     case lists:keyfind(registered_name, 1, Opts) of
         {_, none} -> ok;
-        {_, Name} -> register(Name, self());
-        false     -> register(R, self())
+        {_, Name} -> register(Name, Pid);
+        false     -> register(R, Pid)
     end.
 
 terminate_reporter(#reporter{pid = Pid, mref = MRef}) when is_pid(Pid) ->
