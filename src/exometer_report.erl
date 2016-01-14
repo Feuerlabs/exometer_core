@@ -1396,12 +1396,18 @@ assert_no_duplicates([]) ->
 
 -spec spawn_reporter(reporter_name(), options()) -> {pid(), reference()}.
 spawn_reporter(Reporter, Opt) when is_atom(Reporter), is_list(Opt) ->
+    From = self(),
+    Ack = {make_ref(), registered},
     Fun = fun() ->
                   maybe_register(Reporter, Opt),
+                  From ! Ack,
                   {ok, Mod, St} = reporter_init(Reporter, Opt),
                   reporter_loop(Mod, St)
           end,
     Pid = proc_lib:spawn(Fun),
+    receive Ack -> ok 
+    after 100 -> exit(cant_register_reporter)
+    end,
     MRef = erlang:monitor(process, Pid),
     {Pid, MRef}.
 
