@@ -246,12 +246,6 @@ get_statistics(L, Total, Sorted) ->
 get_statistics2(_L, [], _Total, _Mean) ->
     [];
 
-%% Special case when we get called from
-%% exometer_histogram:get_value_int() with just
-%% a nil min/max pair.
-get_statistics2(_L, [0,0], _Total, _Mean) ->
-    [];
-
 get_statistics2(L, Sorted, Total, Mean) ->
     P50 = perc(0.5, L),
     Items = [{min,1}, {50, P50}, {median, P50}, {75, perc(0.75,L)},
