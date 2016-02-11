@@ -3,7 +3,7 @@
 EXOMETER_PLT=exometer_core.plt
 DIALYZER_OPTS = # -Wunderspecs
 DIALYZER_APPS = erts kernel stdlib compiler syntax_tools \
-		test_server common_test lager goldrush folsom \
+		test_server common_test folsom \
 		parse_trans setup
 
 all: deps compile xref test

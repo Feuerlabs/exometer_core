@@ -183,8 +183,8 @@
 
 -export_type([metric/0, datapoint/0, interval/0, extra/0]).
 
+-include_lib("hut/include/hut.hrl").
 -include("exometer.hrl").
--include("log.hrl").
 
 -define(SERVER, ?MODULE).
 
@@ -629,7 +629,7 @@ start_reporters() ->
 
 do_start_reporters(S) ->
     Opts = get_report_env(),
-    ?info("Starting reporters with ~p~n", [ Opts ]),
+    ?log(info, "Starting reporters with ~p~n", [ Opts ]),
     %% Dig out the mod opts.
     %% { reporters, [ {reporter1, [{opt1, val}, ...]}, {reporter2, [...]}]}
     %% Traverse list of reporter and launch reporter gen servers as dynamic
@@ -1086,7 +1086,7 @@ handle_info({'DOWN', Ref, process, _Pid, Reason}, #st{} = S) ->
     {noreply, S};
 
 handle_info(_Info, State) ->
-    ?warning("exometer_report:info(??): ~p~n", [ _Info ]),
+    ?log(warning, "exometer_report:info(??): ~p~n", [ _Info ]),
     {noreply, State}.
 
 restart_reporter(#reporter{name = Name, opts = Opts, restart = Restart}) ->
@@ -1142,7 +1142,7 @@ handle_report(#key{reporter = Reporter} = Key, Interval, TS, #st{} = St) ->
                 end;
             false ->
                 %% Possibly an unsubscribe removed the subscriber
-                ?error("No such subscriber (Key=~p)~n", [Key])
+                ?log(error, "No such subscriber (Key=~p)~n", [Key])
         end,
     St.
 
@@ -1157,14 +1157,14 @@ do_report(#key{metric = Metric,
             true;
         %% We did not find a value, but we should try again.
         {true, _ } ->
-            ?debug("Metric(~p) Datapoint(~p) not found."
+            ?log(debug, "Metric(~p) Datapoint(~p) not found."
                    " Will try again in ~p msec~n",
                    [Metric, DataPoint, Interval]),
             true;
         %% We did not find a value, and we should not retry.
         _ ->
             %% Entry removed while timer in progress.
-            ?warning("Metric(~p) Datapoint(~p) not found. Will not try again~n",
+            ?log(warning, "Metric(~p) Datapoint(~p) not found. Will not try again~n",
                      [Metric, DataPoint]),
             false
     end.
@@ -1446,7 +1446,7 @@ maybe_send_after(_, _, _) ->
     undefined.
 
 unsubscribe_(Reporter, Metric, DataPoint, Extra) ->
-    ?info("unsubscribe_(~p, ~p, ~p, ~p)~n",
+    ?log(info, "unsubscribe_(~p, ~p, ~p, ~p)~n",
           [ Reporter, Metric, DataPoint, Extra]),
     case ets:lookup(?EXOMETER_SUBS, #key{reporter = Reporter,
                                          metric = Metric,
@@ -1475,7 +1475,7 @@ report_values(Found, #key{reporter = Reporter, extra = Extra} = Key) ->
           || {DP, Val} <- Values] || {Name, Values} <- Found]
     catch
         error:Reason ->
-            lager:error("ERROR ~p~nKey = ~p~nTrace: ~p",
+            ?log(error, "~p~nKey = ~p~nTrace: ~p",
                         [Reason, Key, erlang:get_stacktrace()])
     end.
 
@@ -1514,7 +1514,7 @@ get_subscribers(Metric, Type, Status,
                               metric = Metric,
                               datapoint = SDataPoint
                              }} | T ]) ->
-    ?debug("get_subscribers(~p, ~p, ~p): match~n", [ Metric, SDataPoint, SReporter]),
+    ?log(debug,"get_subscribers(~p, ~p, ~p): match~n", [ Metric, SDataPoint, SReporter]),
     [ { SReporter, SDataPoint } | get_subscribers(Metric, Type, Status, T) ];
 
 %% get_subscribers(Metric, Type, Status,
@@ -1540,7 +1540,7 @@ get_subscribers(Metric, Type, Status,
                               metric = SMetric,
                               datapoint = SDataPoint
                              }} | T]) ->
-    ?debug("get_subscribers(~p, ~p, ~p) nomatch(~p) ~n",
+    ?log(debug, "get_subscribers(~p, ~p, ~p) nomatch(~p) ~n",
            [ SMetric, SDataPoint, SReporter, Metric]),
     get_subscribers(Metric, Type, Status, T).
 
@@ -1569,7 +1569,7 @@ reporter_init(Reporter, Opts) ->
         {ok, St} ->
             {ok, Module, St};
         {error, Reason} ->
-            ?error("Failed to start reporter ~p: ~p~n", [Module, Reason]),
+            ?log(error, "Failed to start reporter ~p: ~p~n", [Module, Reason]),
             exit(Reason)
     end.
 
@@ -1622,7 +1622,7 @@ reporter_loop(Module, St) ->
                   end;
               %% Allow reporters to generate their own callbacks.
               Other ->
-                  ?debug("Custom invocation: ~p(~p)~n", [ Module, Other]),
+                  ?log(debug, "Custom invocation: ~p(~p)~n", [ Module, Other]),
                   case Module:exometer_info(Other, St) of
                       {ok, St1} -> {ok, St1};
                       _ -> {ok, St}
@@ -1676,7 +1676,7 @@ init_subscriber({select, Expr}) when tuple_size(Expr)==3;
       end, Entries);
 
 init_subscriber(Other) ->
-    ?warning("Incorrect static subscriber spec ~p. "
+    ?log(warning, "Incorrect static subscriber spec ~p. "
              "Use { Reporter, Metric, DataPoint, Interval [, Extra ]}~n",
              [ Other ]).
 

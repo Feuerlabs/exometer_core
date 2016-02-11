@@ -73,7 +73,6 @@
 -compile(inline).
 
 -include("exometer.hrl").
--include("log.hrl").
 
 -type name()        :: list().
 -type type()        :: atom().
@@ -97,8 +96,7 @@ start() ->
 
 %% @doc Stop exometer and dependent apps (for testing).
 stop() ->
-    application:stop(exometer_core),
-    application:stop(lager).
+    application:stop(exometer_core).
 
 -spec new(name(), type()) -> ok.
 %% @equiv new(Name, Type, [])
