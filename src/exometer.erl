@@ -76,7 +76,11 @@
 -include("log.hrl").
 
 -type name()        :: list().
--type type()        :: atom().
+-type type()        :: atom()
+                     | {function, M :: atom(), F :: atom()}
+                     | {function, M :: atom(), F :: atom(), ArgSpec :: list(),
+                        Type :: atom(), DataPoints :: list()}
+                     | {Type :: atom(), Arg :: any()}.
 -type status()      :: enabled | disabled.
 -type options()     :: [{atom(), any()}].
 -type value()       :: any().
