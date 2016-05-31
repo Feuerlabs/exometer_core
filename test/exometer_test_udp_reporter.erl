@@ -69,7 +69,7 @@ exometer_report_bulk(Found, Extra, #st{} = St) ->
     ok = send({report_bulk, Found}, St),
     {ok, St}.
 
-exometer_subscribe(Metric, DataPoint, Extra, Interval, St) ->
+exometer_subscribe(Metric, DataPoint, Interval, Extra, St) ->
     ok = send({subscribe, [{metric, Metric},
                            {datapoint, DataPoint},
                            {extra, Extra},

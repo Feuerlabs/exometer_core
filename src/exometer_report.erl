@@ -62,12 +62,12 @@
 %% cancel the creation of the custom reporting plugin.
 %%
 %%
-%% === exometer_subscribe/4 ===
+%% === exometer_subscribe/5 ===
 %%
 %% The `exometer_subscribe()' function is invoked as follows:
 %%
 %% <pre lang="erlang">
-%%      exometer_subscribe(Metric, DataPoint, Interval State)</pre>
+%%      exometer_subscribe(Metric, DataPoint, Interval, Extra, State)</pre>
 %%
 %% The custom plugin can use this notification to modify and return its
 %% state in order to prepare for future calls to `exometer_report()' with
@@ -82,6 +82,9 @@
 %% + `Interval'<br/>Specifies the interval, in milliseconds, that the
 %% subscribed-to value will be reported at, or an atom, referring to a named
 %% interval configured in the reporter.
+%%
+%% + `Extra'<br/>Specifies the extra data, which can be anything the reporter
+%% can understand.
 %%
 %% + `State'<br/>Contains the state returned by the last called plugin function.
 %%
@@ -116,12 +119,12 @@
 %% generate an error log message by exometer.
 %%
 %%
-%% === exometer_unsubscribe/3 ===
+%% === exometer_unsubscribe/4 ===
 %%
 %% The `exometer_unsubscribe()' function is invoked as follows:
 %%
 %% <pre lang="erlang">
-%%      exometer_unsubscribe(Metric, DataPoint, State)</pre>
+%%      exometer_unsubscribe(Metric, DataPoint, Extra, State)</pre>
 %%
 %% The custom plugin can use this notification to modify and return its
 %% state in order to free resources used to maintain the now de-activated
@@ -133,6 +136,9 @@
 %%
 %% + `DataPoint'<br/>Specifies the data point or data points within the
 %%  subscribed-to metric as an atom or a list of atoms.
+%%
+%% + `Extra'<br/>Specifies the extra data, which can be anything the reporter
+%% can understand.
 %%
 %% + `State'<br/>Contains the state returned by the last called plugin function.
 %%
@@ -1600,8 +1606,8 @@ reporter_loop(Module, #rst{st = St, bulk = Bulk} = RSt) ->
                       {ok, St1} -> {ok, St1};
                       _ -> {ok, St}
                   end;
-              {exometer_subscribe, Metric, DataPoint, Extra, Interval } ->
-                  case Module:exometer_subscribe(Metric, DataPoint, Extra, Interval, St) of
+              {exometer_subscribe, Metric, DataPoint, Interval, Extra } ->
+                  case Module:exometer_subscribe(Metric, DataPoint, Interval, Extra, St) of
                       {ok, St1} -> {ok, St1};
                       _ -> {ok, St}
                   end;
