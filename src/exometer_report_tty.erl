@@ -58,7 +58,7 @@ exometer_init(Opts) ->
     TypeMap = proplists:get_value(type_map, Opts, []),
     {ok, #st{type_map = TypeMap}}.
 
-exometer_subscribe(_Metric, _DataPoint, _Extra, _Interval, St) ->
+exometer_subscribe(_Metric, _DataPoint, _Interval, _Extra, St) ->
     {ok, St}.
 
 exometer_unsubscribe(_Metric, _DataPoint, _Extra, St) ->
