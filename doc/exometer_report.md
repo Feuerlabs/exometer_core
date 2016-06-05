@@ -122,7 +122,7 @@ to be reported.
 
 + `State`<br />Contains the state returned by the last called plugin function.
 
-The `exomoeter_report()` function should return `{ok, State}` where
+The `exometer_report()` function should return `{ok, State}` where
 State is a tuple that will be provided as a reference argument to
 future calls made into the plugin. Any other return formats will
 generate an error log message by exometer.
@@ -343,8 +343,14 @@ reporting. If the interval is specified as
 ```
   'manual
 ```
+
 ', it will have
 to be triggered manually using [`trigger_interval/2`](#trigger_interval-2).
+
+`{report_bulk, true | false}`
+Pass all found datapoint/value pairs for a given subscription at once to
+the `exometer_report_bulk/3` function, if it is exported, otherwise use
+`exometer_report/4` as usual.
 
 <a name="call_reporter-2"></a>
 

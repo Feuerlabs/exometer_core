@@ -110,7 +110,7 @@
 %%
 %% + `State'<br/>Contains the state returned by the last called plugin function.
 %%
-%% The `exomoeter_report()' function should return `{ok, State}' where
+%% The `exometer_report()' function should return `{ok, State}' where
 %% State is a tuple that will be provided as a reference argument to
 %% future calls made into the plugin. Any other return formats will
 %% generate an error log message by exometer.
@@ -456,6 +456,11 @@ list_subscriptions(Reporter) ->
 %% at the same time, the delay parameter can be used to achieve staggered
 %% reporting. If the interval is specified as ```'manual'''', it will have
 %% to be triggered manually using {@link trigger_interval/2}.
+%%
+%% `{report_bulk, true | false}'
+%% Pass all found datapoint/value pairs for a given subscription at once to
+%% the `exometer_report_bulk/3' function, if it is exported, otherwise use
+%% `exometer_report/4' as usual.
 %%
 %% @end
 add_reporter(Reporter, Options) ->
@@ -1497,14 +1502,6 @@ report_values(Found, #key{reporter = Reporter, extra = Extra} = Key) ->
             ?log(error, "~p~nKey = ~p~nTrace: ~p",
                         [Reason, Key, erlang:get_stacktrace()])
     end.
-
-%% report_value(Reporter, Metric, DataPoint, Extra, Val) ->
-%%     try Reporter ! {exometer_report, Metric, DataPoint, Extra, Val},
-%%          true
-%%     catch
-%%         error:_ -> false;
-%%         exit:_ -> false
-%%     end.
 
 retrieve_metric({Metric, Type, Enabled}, Acc) ->
     Cands = ets:select(

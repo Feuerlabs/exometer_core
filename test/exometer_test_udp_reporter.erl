@@ -67,21 +67,6 @@ exometer_report(Metric, DataPoint, Extra, Value, #st{type_map = TypeMap,
 
 exometer_report_bulk(Found, Extra, #st{} = St) ->
     ok = send({report_bulk, Found}, St),
-    %% lists:foreach(
-    %%   fun({Metric, Values}) ->
-    %%           lists:foreach(
-    %%             fun({DataPoint, Value}) ->
-    %%                     RptType = exometer_util:report_type(
-    %%                                 {Metric, DataPoint}, Extra, TypeMap),
-    %%                     ok = send({report, [{bulk, true},
-    %%                                         {prefix, Pfx},
-    %%                                         {metric, Metric},
-    %%                                         {datapoint, DataPoint},
-    %%                                         {extra, Extra},
-    %%                                         {report_type, RptType},
-    %%                                         {value, Value}]}, St)
-    %%             end, Values)
-    %%   end, Found),
     {ok, St}.
 
 exometer_subscribe(Metric, DataPoint, Extra, Interval, St) ->
