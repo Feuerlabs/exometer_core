@@ -17,6 +17,7 @@
     exometer_cast/2,
     exometer_call/3,
     exometer_report/5,
+    exometer_report_bulk/3,
     exometer_subscribe/5,
     exometer_unsubscribe/4,
     exometer_newentry/2,
@@ -62,6 +63,10 @@ exometer_report(Metric, DataPoint, Extra, Value, #st{type_map = TypeMap,
                         {extra, Extra},
                         {report_type, RptType},
                         {value, Value}]}, St),
+    {ok, St}.
+
+exometer_report_bulk(Found, Extra, #st{} = St) ->
+    ok = send({report_bulk, Found}, St),
     {ok, St}.
 
 exometer_subscribe(Metric, DataPoint, Extra, Interval, St) ->
