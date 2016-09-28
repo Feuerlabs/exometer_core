@@ -1257,7 +1257,7 @@ restart_batch_timer(Name, #reporter{name = Reporter,
 adjust_interval(Time, T0) ->
     T1 = os:timestamp(),
     case tdiff(T1, T0) of
-        D when D > Time ->
+        D when D > Time; D < 0 ->
             %% Most likely due to clock adjustment
             {Time, T1};
         D ->
