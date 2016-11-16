@@ -128,6 +128,14 @@ ensure_table() ->
             true
     end.
 
+-ifdef(rand_module).
+restart_timers(TTL) ->
+    restart_timers(
+      ets:select(
+        ?TABLE, [{#cache{name = '$1', ttl = '$2', time = '$3', _='_'},
+                  [],[{{'$1','$2','$3'}}]}], 100),
+      TTL, os:timestamp()).
+-else.
 restart_timers(TTL) ->
     random:seed(),
     restart_timers(
@@ -135,6 +143,7 @@ restart_timers(TTL) ->
         ?TABLE, [{#cache{name = '$1', ttl = '$2', time = '$3', _='_'},
                   [],[{{'$1','$2','$3'}}]}], 100),
       TTL, os:timestamp()).
+-endif.
 
 restart_timers({Names, Cont}, TTL, TS) ->
     lists:foreach(

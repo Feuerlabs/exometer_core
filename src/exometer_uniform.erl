@@ -48,7 +48,18 @@
 behaviour() ->
     probe.
 
+-ifdef(rand_module).
+probe_init(Name, _Type, Options) ->
+    St = process_opts(#st { name = Name }, [ {percentiles, [ 50, 75, 90, 95, 99, 999 ]} ] ++ Options),
+    EtsRef = ets:new(uniform, [ set, { keypos, 2 } ]),
 
+    %% Setup random seed, if not already done.
+    case get(random_seed) of
+        undefined -> rand:seed(os:timestamp());
+        _ -> true
+    end,
+    {ok, St#st{ ets_ref = EtsRef }}.
+-else.
 probe_init(Name, _Type, Options) ->
     St = process_opts(#st { name = Name }, [ {percentiles, [ 50, 75, 90, 95, 99, 999 ]} ] ++ Options),
     EtsRef = ets:new(uniform, [ set, { keypos, 2 } ]),
@@ -59,6 +70,7 @@ probe_init(Name, _Type, Options) ->
         _ -> true
     end,
     {ok, St#st{ ets_ref = EtsRef }}.
+-endif.
 
 
 probe_terminate(ModSt) ->
@@ -93,6 +105,17 @@ probe_get_datapoints(_St) ->
 probe_setopts(_Entry, _Opts, _St) ->
     ok.
 
+-ifdef(rand_module).
+probe_update(Value, St) when St#st.cur_sz < St#st.size ->
+    NewSz = St#st.cur_sz + 1,
+    ets:insert(St#st.ets_ref, #elem { slot = NewSz, val = Value }),
+    { ok, St#st { cur_sz = NewSz} };
+
+probe_update(Value, St) ->
+    Slot = rand:uniform(St#st.size),
+    ets:insert(St#st.ets_ref, #elem { slot = Slot, val = Value }),
+    ok.
+-else.
 probe_update(Value, St) when St#st.cur_sz < St#st.size ->
     NewSz = St#st.cur_sz + 1,
     ets:insert(St#st.ets_ref, #elem { slot = NewSz, val = Value }),
@@ -102,6 +125,7 @@ probe_update(Value, St) ->
     Slot = random:uniform(St#st.size),
     ets:insert(St#st.ets_ref, #elem { slot = Slot, val = Value }),
     ok.
+-endif.
 
 probe_reset(St) ->
     ets:delete(St#st.ets_ref),

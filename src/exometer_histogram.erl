@@ -513,7 +513,13 @@ test_series() ->
 dupl(N,V) ->
     lists:duplicate(N, V).
 
+-ifdef(rand_module).
+shuffle(List) ->
+    Randomized = lists:keysort(1, [{rand:uniform(), Item} || Item <- List]),
+    [Value || {_, Value} <- Randomized].
+-else.
 shuffle(List) ->
     random:seed(random:seed0()),
     Randomized = lists:keysort(1, [{random:uniform(), Item} || Item <- List]),
     [Value || {_, Value} <- Randomized].
+-endif.
