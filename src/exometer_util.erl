@@ -380,7 +380,7 @@ seed0() ->
     {0, 0, 0}.
 
 seed({A, B, C}) ->
-    %% rand in the erlang version 18 or above, use a different seed methond, does not use the seed like this any more
+    %% rand in the erlang version 18 or above, use a different seed methond, does not use the seed like that any more
     {A, B, C}.
 
 uniform() ->
@@ -397,7 +397,6 @@ seed0() ->
     random:seed0().
 
 seed({A, B, C}) ->
-    %% rand in the erlang version 18 or above, use a different seed methond, does not use the seed like this any more
     random:seed({A, B, C}).
 
 uniform() ->
