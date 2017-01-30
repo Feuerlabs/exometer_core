@@ -23,6 +23,7 @@
     test_std_counter/1,
     test_gauge/1,
     test_fast_counter/1,
+    test_crashing_function/1,
     test_wrapping_counter/1,
     test_update_or_create/1,
     test_update_or_create2/1,
@@ -47,7 +48,8 @@
 %% utility exports
 -export(
    [
-    vals/0
+    vals/0,
+    crash_fun/0
    ]).
 
 -import(exometer_test_util, [majority/2]).
@@ -74,6 +76,7 @@ groups() ->
         test_std_counter,
         test_gauge,
         test_fast_counter,
+        test_crashing_function,
         test_wrapping_counter
       ]},
      {test_defaults, [shuffle],
@@ -214,6 +217,15 @@ test_fast_counter(_Config) ->
     fc(),
     {ok, [{value, 2}]} = exometer:get_value(C, [value]),
     {ok, [{value, 2}, {ms_since_reset, _}]} = exometer:get_value(C),
+    ok.
+
+test_crashing_function(_Config) ->
+    C1 = [?MODULE, function, ?LINE],
+    C2 = [?MODULE, cached_function, ?LINE],
+    ok = exometer:new(C1, {function, ?MODULE, crash_fun, [], valie, [value]}, []),
+    ok = exometer:new(C2, {function, ?MODULE, crash_fun, [], valie, [value]}, [{cache, 5000}]),
+    {ok, {error, unavailable}} = exometer:get_value(C1, [value]),
+    {ok, {error, unavailable}} = exometer:get_value(C2, [value]),
     ok.
 
 test_wrapping_counter(_Config) ->
@@ -509,6 +521,10 @@ scale_mean([H|T]) ->
 
 fc() ->
     ok.
+
+crash_fun() ->
+    throw(error),
+    [{value, 1}].
 
 load_data(F, M) ->
     {ok, [Values]} = file:consult(F),
