@@ -8,7 +8,7 @@ DIALYZER_APPS = erts kernel stdlib compiler syntax_tools \
 
 all: deps compile xref test
 
-ci: compile xref dialyzer test
+ci: deps compile xref dialyzer test
 
 deps:
 	rebar get-deps
