@@ -514,6 +514,6 @@ dupl(N,V) ->
     lists:duplicate(N, V).
 
 shuffle(List) ->
-    random:seed(random:seed0()),
-    Randomized = lists:keysort(1, [{random:uniform(), Item} || Item <- List]),
+    exometer_util:seed(exometer_util:seed0()),
+    Randomized = lists:keysort(1, [{exometer_util:uniform(), Item} || Item <- List]),
     [Value || {_, Value} <- Randomized].

@@ -35,7 +35,12 @@
     set_event_flag/2,
     clear_event_flag/2,
     test_event_flag/2,
-    ensure_all_started/1
+    ensure_all_started/1,
+    seed/0,
+    seed0/0,
+    seed/1,
+    uniform/0,
+    uniform/1
    ]).
 
 -export_type([timestamp/0]).
@@ -366,6 +371,41 @@ ensure_all_started(App) ->
     %% Referencing application:ensure_all_started/1 will anger Xref
     %% in earlier R16B versions of OTP
     ensure_all_started(App, []).
+
+-ifdef(rand_module).
+seed() ->
+    {0, 0, 0}.
+
+seed0() ->
+    {0, 0, 0}.
+
+seed({A, B, C}) ->
+    %% rand in the erlang version 18 or above, use a different seed methond, does not use the seed like that any more
+    {A, B, C}.
+
+uniform() ->
+    rand:uniform().
+
+uniform(N) ->
+    rand:uniform(N).
+
+-else.
+seed() ->
+    random:seed().
+
+seed0() ->
+    random:seed0().
+
+seed({A, B, C}) ->
+    random:seed({A, B, C}).
+
+uniform() ->
+    random:uniform().
+
+uniform(N) ->
+    random:uniform(N).
+
+-endif.
 
 %% This implementation is originally from Basho's
 %% Webmachine. Reimplementation of ensure_all_started. NOTE this does
