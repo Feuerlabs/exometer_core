@@ -1148,7 +1148,20 @@ maybe_enable_subscriptions(#exometer_entry{name = Metric}) ->
       end, ets:select(?EXOMETER_SUBS,
                       [{#subscriber{key = #key{metric = Metric,
                                                _ = '_'},
-                                    _ = '_'}, [], ['$_']}])).
+                                    _ = '_'}, [], ['$_']}])),
+    %% Also re-check the static subscribers for select and apply
+    case lists:keyfind(subscribers, 1, get_report_env()) of
+        {subscribers, Subscribers} ->
+            lists:foreach(
+                fun(Sub) ->
+                    case Sub of
+                        {select, _} -> init_subscriber(Sub);
+                        {apply, _} -> init_subscriber(Sub);
+                        _ -> ok
+                    end
+                end, Subscribers);
+        false -> []
+    end.
 
 resubscribe(#subscriber{key = #key{reporter = RName,
                                    metric = Metric,
@@ -1460,16 +1473,21 @@ terminate_reporter(#reporter{pid = undefined}) ->
 
 subscribe_(Reporter, Metric, DataPoint, Interval, RetryFailedMetrics,
            Extra, Status) ->
+    ?log(debug, "subscribe_(~p, ~p, ~p, ~p, ~p, ~p, ~p)~n", [Reporter, Metric, DataPoint, Interval, RetryFailedMetrics, Extra, Status]),
     Key = #key{reporter = Reporter,
                metric = Metric,
                datapoint = DataPoint,
                extra = Extra,
                retry_failed_metrics = RetryFailedMetrics
               },
-    ets:insert(?EXOMETER_SUBS,
-               #subscriber{key = Key,
-                           interval = Interval,
-                           t_ref = maybe_send_after(Status, Key, Interval)}).
+    case ets:lookup(?EXOMETER_SUBS, Key) of
+        [] -> ets:insert(?EXOMETER_SUBS,
+                 #subscriber{key = Key,
+                             interval = Interval,
+                             t_ref = maybe_send_after(Status, Key, Interval)});
+        _ ->
+            ?log(debug, "subscribe_(): not adding duplicate subscription")
+        end.
 
 maybe_send_after(enabled, Key, Interval) when is_integer(Interval) ->
     erlang:send_after(
