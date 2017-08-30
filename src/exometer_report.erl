@@ -1246,8 +1246,9 @@ cancel_subscr_timers(Reporter) ->
                                     _ = '_'}, [], ['$_']}])).
 
 restart_subscr_timer(Key, Interval, T0) when is_integer(Interval) ->
-    TRef = erlang:send_after(adjust_interval(Interval, T0), self(),
-                             subscr_timer_msg(Key, Interval, T0)),
+    {AdjInt, RptTime} = adjust_interval(Interval, T0),
+    TRef = erlang:send_after(AdjInt, self(),
+                             subscr_timer_msg(Key, Interval, RptTime)),
     ets:update_element(?EXOMETER_SUBS, Key,
                        [{#subscriber.t_ref, TRef}]);
 restart_subscr_timer(_, _, _) ->
@@ -1258,9 +1259,10 @@ restart_batch_timer(Name, #reporter{name = Reporter,
     case lists:keyfind(Name, #interval.name, Ints) of
         #interval{time = Time, t_ref = OldTRef} = I when is_integer(Time) ->
             cancel_timer(OldTRef),
-            TRef = erlang:send_after(
-                     adjust_interval(Time, T0), self(),
-                     batch_timer_msg(Reporter, Name, Time, T0)),
+            {Int, RptTime} = adjust_interval(Time, T0),
+            TRef = erlang:send_after(Int, self(),
+                                     batch_timer_msg(
+                                       Reporter, Name, Time, RptTime)),
             ets:update_element(?EXOMETER_REPORTERS, Reporter,
                                [{#reporter.intervals,
                                  lists:keyreplace(Name, #interval.name, Ints,
@@ -1273,7 +1275,13 @@ restart_batch_timer(Name, #reporter{name = Reporter,
 
 adjust_interval(Time, T0) ->
     T1 = os:timestamp(),
-    erlang:max(0, Time - tdiff(T1, T0)).
+    case tdiff(T1, T0) of
+        D when D > Time; D < 0 ->
+            %% Most likely due to clock adjustment
+            {Time, T1};
+        D ->
+            {D, T0}
+    end.
 
 tdiff(T1, T0) ->
     timer:now_diff(T1, T0) div 1000.
