@@ -817,15 +817,14 @@ handle_call({subscribe,
                    retry_failed_metrics = RetryFailedMetrics,
                    extra = Extra} , Interval },
             _From, #st{} = St) ->
-
     %% Verify that the given metric/data point actually exist.
     case ets:lookup(?EXOMETER_REPORTERS, Reporter) of
-        [#reporter{status = Status}] ->
+        [#reporter{status = Status, pid=ReporterPid}] ->
             case is_valid_metric(Metric, DataPoint) of
                 true ->
                     if Status =:= enabled ->
-                            Reporter ! {exometer_subscribe, Metric,
-                                        DataPoint, Interval, Extra};
+                            ReporterPid ! {exometer_subscribe, Metric,
+                                           DataPoint, Interval, Extra};
                        true -> ignore
                     end,
                     subscribe_(Reporter, Metric, DataPoint,
