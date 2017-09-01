@@ -629,7 +629,7 @@ init([]) ->
                     {remove, How} ->
                         case How of
                             {M, F} when is_atom(M), is_atom(F) ->
-                                try M:F(Module, parent_restart) catch _:_ -> ok end;
+                                try M:F(Module, {?MODULE, parent_restart}) catch _:_ -> ok end;
                             _ ->
                                 ok
                         end,
