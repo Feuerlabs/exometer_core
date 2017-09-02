@@ -654,6 +654,26 @@ new_entry(Entry) ->
 %%--------------------------------------------------------------------
 init([]) ->
     process_flag(trap_exit, true),
+    D = ets:foldl(
+        fun (#reporter{name = Name, module = Module, restart = Restart} = R, Acc) ->
+                terminate_reporter(R),
+                case add_restart(Restart) of
+                    {remove, How} ->
+                        case How of
+                            {M, F} when is_atom(M), is_atom(F) ->
+                                try M:F(Module, {?MODULE, parent_restart}) catch _:_ -> ok end;
+                            _ ->
+                                ok
+                        end,
+                        [Name | Acc];
+                    {restart, Restart1} ->
+                        restart_reporter(R#reporter{restart = Restart1}),
+                        Acc
+                end
+        end,
+        [],
+        ?EXOMETER_REPORTERS),
+    [ets:delete(?EXOMETER_REPORTERS, R) || R <- D],
     {ok, #st{}}.
 
 start_reporters() ->
