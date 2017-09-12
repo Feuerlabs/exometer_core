@@ -132,7 +132,9 @@ init_per_testcase(Case, Config) when
 init_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
-    ok = application:set_env(stdlib, exometer_predefined, {script, "../../test/data/test_defaults.script"}),
+    ok = application:set_env(
+           stdlib, exometer_predefined,
+           {script, file_path("test/data/test_defaults.script")}),
     {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
     ct:log("StartedApps = ~p~n", [StartedApps]),
     [{started_apps, StartedApps} | Config];
@@ -374,22 +376,26 @@ test_aggregate(_Config) ->
     ok.
 
 test_history1_slide(_Config) ->
-    test_history(1, slide, "../../test/data/puts_time_hist1.bin").
+    test_history(1, slide, file_path("test/data/puts_time_hist1.bin")).
 
 test_history1_slotslide(_Config) ->
-    test_history(1, slot_slide, "../../test/data/puts_time_hist1.bin").
+    test_history(1, slot_slide, file_path("test/data/puts_time_hist1.bin")).
 
 test_history1_folsom(_Config) ->
-    test_history(1, folsom, "../../test/data/puts_time_hist1.bin").
+    test_history(1, folsom, file_path("test/data/puts_time_hist1.bin")).
 
 test_history4_slide(_Config) ->
-    test_history(4, slide, "../../test/data/puts_time_hist4.bin").
+    test_history(4, slide, file_path("test/data/puts_time_hist4.bin")).
 
 test_history4_slotslide(_Config) ->
-    test_history(4, slot_slide, "../../test/data/puts_time_hist4.bin").
+    test_history(4, slot_slide, file_path("test/data/puts_time_hist4.bin")).
 
 test_history4_folsom(_Config) ->
-    test_history(4, folsom, "../../test/data/puts_time_hist4.bin").
+    test_history(4, folsom, file_path("test/data/puts_time_hist4.bin")).
+
+file_path(F) ->
+    filename:join(code:lib_dir(exometer_core), F).
+
 
 test_ext_predef(_Config) ->
     {ok, [{total, _}]} = exometer:get_value([preset, func], [total]),
@@ -527,6 +533,8 @@ crash_fun() ->
     [{value, 1}].
 
 load_data(F, M) ->
+    ct:log("load_data(~s,...)", [F]),
+    ct:log("CWD = ~p", [element(2, file:get_cwd())]),
     {ok, [Values]} = file:consult(F),
     Stats = bear:get_statistics(Values),
     _T1 = os:timestamp(),
