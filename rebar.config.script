@@ -35,13 +35,10 @@ CFG1 = case os:getenv("REBAR_DEPS") of
                lists:keystore(deps_dir, 1, CONFIG0, {deps_dir, Dir})
        end.
 
-Priv = filename:join(filename:dirname(SCRIPT), "priv").
-CFG2 = Script(Priv, "check_edown.script", [{'CONFIG', CFG1}]).
-
 case os:getenv("EXOMETER_CORE_CONFIG_POSTPROCESS") of
-    false  -> CFG2;
-    []     -> CFG2;
+    false  -> CFG1;
+    []     -> CFG1;
     PoPScr -> Script(filename:dirname(PoPScr),
 		     filename:basename(PoPScr),
-		     [{'CONFIG', CFG2}])
+		     [{'CONFIG', CFG1}])
 end.
