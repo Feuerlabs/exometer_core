@@ -1,24 +1,14 @@
-[{<<"bear">>,
-  {git,"git://github.com/boundary/bear.git",
-       {ref,"119234548783af19b8ec75c879c5062676b92571"}},
-  1},
- {<<"folsom">>,
-  {git,"git://github.com/folsom-project/folsom",
-       {ref,"38e2cce7c64ce1f0a3a918d90394cfc0a940b1ba"}},
-  0},
- {<<"hut">>,
-  {git,"git://github.com/tolbrino/hut.git",
-       {ref,"025540398478ab6f95932c3234382ac5bb21ad3e"}},
-  0},
- {<<"meck">>,
-  {git,"git://github.com/eproxus/meck",
-       {ref,"dde759050eff19a1a80fd854d7375174b191665d"}},
-  1},
- {<<"parse_trans">>,
-  {git,"git://github.com/uwiger/parse_trans.git",
-       {ref,"a210adafdfbb904d156d8f22abd5fb58fc17de1e"}},
-  0},
- {<<"setup">>,
-  {git,"git://github.com/uwiger/setup.git",
-       {ref,"76124131ac11bdb0112fb47a244784e152531dad"}},
-  0}].
+{"1.1.0",
+[{<<"bear">>,{pkg,<<"bear">>,<<"0.8.5">>},1},
+ {<<"folsom">>,{pkg,<<"folsom">>,<<"0.8.5">>},0},
+ {<<"hut">>,{pkg,<<"hut">>,<<"1.2.0">>},0},
+ {<<"parse_trans">>,{pkg,<<"parse_trans">>,<<"3.1.0">>},0},
+ {<<"setup">>,{pkg,<<"setup">>,<<"2.0.0">>},0}]}.
+[
+{pkg_hash,[
+ {<<"bear">>, <<"E95FCA1627CD9E15BAF93CE0A52AFF16917BAF325F0EE65B88CD715376CD2344">>},
+ {<<"folsom">>, <<"94A027B56FE84FEED264F9B33CB4C6AC9A801FAD84B87DBDA0836CE83C3B8D69">>},
+ {<<"hut">>, <<"0089DF0FAA2827C605BBADA88153F24FFF5EA7A4BE32ECF0250A7FDC2719CAFB">>},
+ {<<"parse_trans">>, <<"1BAD3B959941CC53FFD6F4769A5D2666F9CDF179B2D62826636497D3FBAD9EC0">>},
+ {<<"setup">>, <<"DE842FBC4F6610BDEF95B107D04DBC9715229E34058AD540C665ECD31B052C91">>}]}
+].
