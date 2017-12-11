@@ -86,7 +86,7 @@ init(_) ->
     {ok, #st{mon = Mon}}.
 
 find_env() ->
-    E1 = [E || {_, E} <- setup:find_env_vars(exometer_folsom_monitor)],
+    E1 = [E || {_, E} <- exometer_setup:find_env_vars(exometer_folsom_monitor)],
     E2 = exometer_util:get_env(folsom_monitor, []),
     lists:flatmap(
       fun({_,_} = M) -> [M];

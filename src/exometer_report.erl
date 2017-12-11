@@ -801,12 +801,12 @@ split_env(Tag, Opts) ->
 
 get_reporters(L0) ->
     Rs = exometer_util:get_env(reporters, []),
-    Ext = setup:find_env_vars(exometer_reporters),
+    Ext = exometer_setup:find_env_vars(exometer_reporters),
     merge_env(reporters, Rs ++ L0, Ext).
 
 get_subscribers(L0) ->
     Ss = exometer_util:get_env(subscribers, []),
-    Ext = setup:find_env_vars(exometer_subscribers),
+    Ext = exometer_setup:find_env_vars(exometer_subscribers),
     merge_env(subscribers, Ss ++ L0, Ext).
 
 merge_env(_, [], []) -> [];
