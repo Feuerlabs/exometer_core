@@ -400,7 +400,8 @@ get_cached_value_(#exometer_entry{name = Name,
             [ exometer_cache:write(Name, DataPoint1, Value1, CacheTTL)
               || { DataPoint1, Value1 } <- Result],
             All = Result ++ Cached,
-            [{_,_} = lists:keyfind(DP, 1, All) || DP <- DataPoints]
+            [{_,_} = lists:keyfind(DP, 1, All) || DP <- DataPoints,
+                                                  lists:keymember(DP,1,All)]
     end.
 
 
