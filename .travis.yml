@@ -1,6 +1,9 @@
 sudo: false
 language: erlang
-script: rebar3 ct
+before_script:
+    - wget https://github.com/erlang/rebar3/releases/download/3.6.1/rebar3
+    - chmod +x rebar3
+script: ./rebar3 ct
 otp_release:
     - 21.0
     - 20.3
