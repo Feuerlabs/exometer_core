@@ -8,8 +8,7 @@
    [
     kernel,
     stdlib,
-    hut,
-    folsom
+    hut
    ]},
   {included_applications,
    [
