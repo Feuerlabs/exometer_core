@@ -1299,7 +1299,7 @@ adjust_interval(Time, T0) ->
             %% Most likely due to clock adjustment
             {Time, T1};
         D ->
-            {D, T0}
+            {Time-D, T0}
     end.
 
 tdiff(T1, T0) ->
