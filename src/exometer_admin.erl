@@ -550,8 +550,7 @@ module(histogram)     -> exometer_histogram;
 module(spiral   )     -> exometer_spiral;
 module(netlink  )     -> exometer_netlink;
 module(cpu      )     -> exometer_cpu;
-module(function )     -> exometer_function;
-module(meter    )     -> exometer_folsom.
+module(function )     -> exometer_function.
 
 search_default(Name, Type) ->
     case ets:lookup(?EXOMETER_SHARED, {default,Type,Name}) of

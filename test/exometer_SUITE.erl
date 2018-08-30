@@ -31,14 +31,11 @@
     test_std_histogram/1,
     test_slot_histogram/1,
     test_std_duration/1,
-    test_folsom_histogram/1,
     test_aggregate/1,
     test_history1_slide/1,
     test_history1_slotslide/1,
-    test_history1_folsom/1,
     test_history4_slide/1,
     test_history4_slotslide/1,
-    test_history4_folsom/1,
     test_ext_predef/1,
     test_app_predef/1,
     test_function_match/1,
@@ -90,14 +87,11 @@ groups() ->
        test_std_histogram,
        test_slot_histogram,
        test_std_duration,
-       test_folsom_histogram,
        test_aggregate,
        test_history1_slide,
        test_history1_slotslide,
-       test_history1_folsom,
        test_history4_slide,
-       test_history4_slotslide,
-       test_history4_folsom
+       test_history4_slotslide
       ]},
      {test_setup, [shuffle],
       [
@@ -121,15 +115,6 @@ end_per_suite(_Config) ->
     ok.
 
 init_per_testcase(Case, Config) when
-      Case == test_folsom_histogram;
-      Case == test_history1_folsom;
-      Case == test_history4_folsom ->
-    {ok, StartedApps} = exometer_test_util:ensure_all_started(exometer_core),
-    ct:log("StartedApps = ~p", [StartedApps]),
-    application:start(bear),
-    application:start(folsom),
-    [{started_apps, StartedApps} | Config];
-init_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
     ok = application:set_env(
@@ -152,14 +137,6 @@ init_per_testcase(_Case, Config) ->
     ct:log("StartedApps = ~p~n", [StartedApps]),
     [{started_apps, StartedApps} | Config].
 
-end_per_testcase(Case, Config) when
-      Case == test_folsom_histogram;
-      Case == test_history1_folsom;
-      Case == test_history4_folsom ->
-    _ = stop_started_apps(Config),
-    folsom:stop(),
-    application:stop(bear),
-    ok;
 end_per_testcase(Case, Config) when
       Case == test_ext_predef;
       Case == test_function_match ->
@@ -336,32 +313,6 @@ update_duration(C, V) ->
     timer:sleep(V),
     exometer:update(C, timer_end).
 
-test_folsom_histogram(_Config) ->
-    ok = exometer:new(
-	   C1 = [?MODULE,hist,?LINE],
-	   ad_hoc, [{module, exometer_folsom},
-		    {type, histogram}]),  %% truncate by default
-    ok = exometer:new(
-	   C2 = [?MODULE,hist,?LINE],
-	   ad_hoc, [{module, exometer_folsom},
-		    {type, histogram},
-		    {truncate, true}]),
-    ok = exometer:new(
-	   C3 = [?MODULE,hist,?LINE],
-	   ad_hoc, [{module, exometer_folsom},
-		    {type, histogram},
-		    {truncate, false}]),
-    _ = [[update_(C1,V),update_(C2,V),update_(C3,V)] || V <- vals()],
-    {_, {ok,DPs1}} = timer:tc(exometer, get_value, [C1]),
-    {_, {ok,DPs2}} = timer:tc(exometer, get_value, [C2]),
-    {_, {ok,DPs3}} = timer:tc(exometer, get_value, [C3]),
-    [{n,134},{mean,2},{min,1},{max,9},{median,2},
-     {50,2},{75,3},{90,4},{95,5},{99,8},{999,9}] = DPs1 = DPs2,
-    [{n,134},{mean,2126866},{min,1},{max,9},{median,2},
-     {50,2},{75,3},{90,4},{95,5},{99,8},{999,9}] =
-     	scale_mean(DPs3),
-    ok.
-
 test_aggregate(_Config) ->
     K = ?LINE,
     ok = exometer:new(E1 = [?MODULE, K, a, 1], gauge, []),
@@ -383,17 +334,11 @@ test_history1_slide(_Config) ->
 test_history1_slotslide(_Config) ->
     test_history(1, slot_slide, file_path("test/data/puts_time_hist1.bin")).
 
-test_history1_folsom(_Config) ->
-    test_history(1, folsom, file_path("test/data/puts_time_hist1.bin")).
-
 test_history4_slide(_Config) ->
     test_history(4, slide, file_path("test/data/puts_time_hist4.bin")).
 
 test_history4_slotslide(_Config) ->
     test_history(4, slot_slide, file_path("test/data/puts_time_hist4.bin")).
-
-test_history4_folsom(_Config) ->
-    test_history(4, folsom, file_path("test/data/puts_time_hist4.bin")).
 
 file_path(F) ->
     filename:join(code:lib_dir(exometer_core), F).
@@ -490,21 +435,6 @@ test_history(N, slot_slide, F) ->
     ct:log("time: ~p~n"
            "history(~w,ss): ~p~n"
            "reference:    ~p~n"
-           "error: ~p~n", [T, N, Val, Subset, Error]),
-    ok;
-test_history(N, folsom, F) ->
-    M = [?MODULE, hist, ?LINE],
-    ok = exometer:new(
-           M, ad_hoc, [{module, exometer_folsom},
-                       {type, histogram},
-                       {truncate, true}]),
-    RefStats = load_data(F, M),
-    {T, {ok, Val}} = timer:tc(exometer,get_value,[M]),
-    Subset = subset(RefStats),
-    Error = calc_error(Val, Subset),
-    ct:log("time: ~p~n"
-           "history(~w,f): ~p~n"
-           "reference: ~p~n"
            "error: ~p~n", [T, N, Val, Subset, Error]),
     ok.
 
