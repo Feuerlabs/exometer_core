@@ -4,6 +4,6 @@ script:
     - rebar3 do eunit
     - rebar3 do ct
 otp_release:
-    - 21.0
+    - 21.0.7
     - 20.3
     - 19.3
