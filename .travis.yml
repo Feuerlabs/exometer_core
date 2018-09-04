@@ -2,7 +2,7 @@ sudo: false
 language: erlang
 script:
     - rebar3 do eunit
-    - rebar3 do ct
+    - rebar3 ct --readable=false
 otp_release:
     - 21.0.7
     - 20.3
