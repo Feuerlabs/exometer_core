@@ -2,7 +2,7 @@
 {application, exometer_core,
  [
   {description, "Code instrumentation and metrics collection package."},
-  {vsn, git},
+  {vsn, "1.5.3"},
   {registered, []},
   {applications,
    [
@@ -20,5 +20,8 @@
                   {preset_defaults, []}]},
   {env,
    [
-   ]}
+   ]},
+  {maintainers, ["Magnus Feuer", "Ulf Wiger", "Tino Breddin"]},
+  {licenses, ["MPL-2.0"]},
+  {links, [{"Github", "https://github.com/Feuerlabs/exometer_core"}]}
  ]}.
