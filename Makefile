@@ -29,10 +29,11 @@ xref:
 	ERL_LIBS=./deps rebar3 xref skip_deps=true
 
 edown_deps:
-	rebar3 do upgrade compile edown=true
+	rebar3 as docs upgrade
+	rebar3 as docs compile
 
 doc: edown_deps
-	rebar3 edoc edown=true skip_deps=true
+	rebar3 as docs edoc
 
 $(EXOMETER_PLT): deps compile
 	ERL_LIBS=deps dialyzer --build_plt --output_plt $(EXOMETER_PLT) \

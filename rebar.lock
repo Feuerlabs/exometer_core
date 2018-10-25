@@ -1,4 +1,8 @@
 [{<<"bear">>,{pkg,<<"bear">>,<<"0.8.5">>},1},
+ {<<"edown">>,
+  {git,"git://github.com/esl/edown.git",
+       {ref,"4d18dc4bec89c20c0ba8cab6884ce690ca606f4a"}},
+  0},
  {<<"folsom">>,{pkg,<<"folsom">>,<<"0.8.5">>},0},
  {<<"hut">>,{pkg,<<"hut">>,<<"1.2.0">>},0},
  {<<"parse_trans">>,{pkg,<<"parse_trans">>,<<"3.2.0">>},0},
