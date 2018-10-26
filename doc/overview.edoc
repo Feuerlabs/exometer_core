@@ -661,5 +661,5 @@ processing is complete.
 [hex]: https://hex.pm/packages/exometer_core
 [hex version badge]: https://img.shields.io/hexpm/v/exometer_core.svg?style=flat-square
 [hex license badge]: https://img.shields.io/hexpm/l/exometer_core.svg?style=flat-square
-[erlang version badge]: https://img.shields.io/badge/erlang-18--20-blue.svg?style=flat-square
+[erlang version badge]: https://img.shields.io/badge/erlang-19--20-blue.svg?style=flat-square
 [build tool]: https://img.shields.io/badge/build%20tool-rebar3-orange.svg?style=flat-square
