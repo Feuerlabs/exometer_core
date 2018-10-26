@@ -11,7 +11,7 @@ all: deps compile xref test
 ci: deps compile xref dialyzer test
 
 deps:
-	rebar3 upgrade
+	rebar3 get-deps
 
 compile:
 	rebar3 compile
@@ -29,7 +29,7 @@ xref:
 	ERL_LIBS=./deps rebar3 xref skip_deps=true
 
 edown_deps:
-	rebar3 as docs upgrade
+	rebar3 as docs get-deps
 	rebar3 as docs compile
 
 doc: edown_deps
