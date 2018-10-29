@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Basho Technologies, Inc.  All Rights Reserved.
 
-__Version:__ Oct 25 2018 17:52:49
+__Version:__ Oct 29 2018 15:25:17
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 
@@ -720,7 +720,7 @@ processing is complete.
 [hex]: https://hex.pm/packages/exometer_core
 [hex version badge]: https://img.shields.io/hexpm/v/exometer_core.svg?style=flat-square
 [hex license badge]: https://img.shields.io/hexpm/l/exometer_core.svg?style=flat-square
-[erlang version badge]: https://img.shields.io/badge/erlang-18--20-blue.svg?style=flat-square
+[erlang version badge]: https://img.shields.io/badge/erlang-19--20-blue.svg?style=flat-square
 [build tool]: https://img.shields.io/badge/build%20tool-rebar3-orange.svg?style=flat-square
 
 
