@@ -1,7 +1,11 @@
 sudo: false
 language: erlang
-script: "make ci"
+script:
+    - wget -c https://github.com/erlang/rebar3/releases/download/3.6.2/rebar3
+    - chmod +x rebar3
+    - REBAR3=./rebar3 make ci
 otp_release:
+    - 21.1
     - 20.3
     - 20.2
     - 20.1

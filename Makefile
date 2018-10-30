@@ -1,4 +1,4 @@
-REBAR3=$(shell which rebar3 || echo ./rebar3)
+REBAR3 ?= rebar3
 
 .PHONY: all clean clean_plt compile test doc dialyzer xref ci
 
