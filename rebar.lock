@@ -1,14 +1,14 @@
 {"1.1.0",
-[{<<"bear">>,{pkg,<<"bear">>,<<"0.8.5">>},1},
- {<<"folsom">>,{pkg,<<"folsom">>,<<"0.8.5">>},0},
+[{<<"bear">>,{pkg,<<"bear">>,<<"0.8.7">>},1},
+ {<<"folsom">>,{pkg,<<"folsom">>,<<"0.8.7">>},0},
  {<<"hut">>,{pkg,<<"hut">>,<<"1.2.0">>},0},
- {<<"parse_trans">>,{pkg,<<"parse_trans">>,<<"3.2.0">>},0},
+ {<<"parse_trans">>,{pkg,<<"parse_trans">>,<<"3.3.0">>},0},
  {<<"setup">>,{pkg,<<"setup">>,<<"2.0.2">>},0}]}.
 [
 {pkg_hash,[
- {<<"bear">>, <<"E95FCA1627CD9E15BAF93CE0A52AFF16917BAF325F0EE65B88CD715376CD2344">>},
- {<<"folsom">>, <<"94A027B56FE84FEED264F9B33CB4C6AC9A801FAD84B87DBDA0836CE83C3B8D69">>},
+ {<<"bear">>, <<"16264309AE5D005D03718A5C82641FCC259C9E8F09ADEB6FD79CA4271168656F">>},
+ {<<"folsom">>, <<"A885F0AEEE4C84270954C88A55A5A473D6B2C7493E32FFDC5765412DD555A951">>},
  {<<"hut">>, <<"0089DF0FAA2827C605BBADA88153F24FFF5EA7A4BE32ECF0250A7FDC2719CAFB">>},
- {<<"parse_trans">>, <<"2ADFA4DAF80C14DC36F522CF190EB5C4EE3E28008FC6394397C16F62A26258C2">>},
+ {<<"parse_trans">>, <<"09765507A3C7590A784615CFD421D101AEC25098D50B89D7AA1D66646BC571C1">>},
  {<<"setup">>, <<"1203F4CDA11306C2E34434244576DED0A7BBFB0908D9A572356C809BD0CDF085">>}]}
 ].

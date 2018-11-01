@@ -1554,9 +1554,9 @@ unsubscribe_(#subscriber{key = #key{reporter = Reporter,
 report_values(Found, #key{reporter = Reporter, extra = Extra} = Key) ->
     try Reporter ! {exometer_report, Found, Extra}
     catch
-        error:Reason ->
+        ?EXCEPTION(error, Reason, Stacktrace) ->
             ?log(error, "~p~nKey = ~p~nTrace: ~p",
-                        [Reason, Key, erlang:get_stacktrace()])
+                        [Reason, Key, ?GET_STACK(Stacktrace)])
     end.
 
 retrieve_metric({Metric, Type, Enabled}, Acc) ->
