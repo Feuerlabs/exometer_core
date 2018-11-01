@@ -1,7 +1,7 @@
 # Changelog
 
-## [v1.5.5](https://github.com/Feuerlabs/exometer_core/tree/v1.5.5) (2018-11-01)
-[Full Changelog](https://github.com/Feuerlabs/exometer_core/compare/v1.5.4...v1.5.5)
+## [v1.5.5](https://github.com/Feuerlabs/exometer_core/tree/1.5.5) (2018-11-01)
+[Full Changelog](https://github.com/Feuerlabs/exometer_core/compare/1.5.4...1.5.5)
 
 - Add OTP 21 support and CI coverage [\#114](https://github.com/Feuerlabs/exometer_core/pull/114)
 - Fix handling of cache misses [\#117](https://github.com/Feuerlabs/exometer_core/pull/117)
