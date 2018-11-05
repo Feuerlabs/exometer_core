@@ -195,7 +195,7 @@ repair(Name) ->
 ensure(Name, Type, Opts) when is_list(Name), is_list(Opts) ->
     exometer_admin:ensure(Name, Type, Opts).
 
-
+-dialyzer({no_match, update/2}).
 -spec update(name(), value()) -> ok | error().
 %% @doc Update the given metric with `Value'.
 %%
@@ -443,6 +443,7 @@ sample(Name)  when is_list(Name) ->
     end.
 
 
+-dialyzer({no_match, reset/1}).
 -spec reset(name()) -> ok | error().
 %% @doc Reset the metric.
 %%

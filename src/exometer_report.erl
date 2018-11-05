@@ -281,7 +281,7 @@
           reporter              :: module()     | '_',
           metric                :: metric()     | '_',
           datapoint             :: datapoints() | '_',
-          retry_failed_metrics  :: boolean()    | '_',
+          retry_failed_metrics  :: boolean()    | undefined | '_',
           extra                 :: extra()      | '_'
          }).
 
@@ -307,7 +307,7 @@
 -record(reporter, {
           name      :: atom()                | '_',
           pid       :: pid()                 | atom(), % in select()
-          mref      :: reference()           | '_',
+          mref      :: reference()           | undefined | '_',
           module    :: module()              | '_',
           opts = [] :: [{atom(), any()}]     | '_',
           intervals = [] :: [#interval{}]    | '_',
@@ -380,12 +380,14 @@ subscribe(Reporter, Metric, DataPoint, Interval, Extra, Retry)
                           retry_failed_metrics = Retry,
                           extra = Extra}, Interval}).
 
+-dialyzer({no_return, unsubscribe/3}).
 -spec unsubscribe(module(), metric(), datapoint()) ->
                          ok | not_found.
 %% @equiv unsubscribe(Reporter, Metric, DataPoint, [])
 unsubscribe(Reporter, Metric, DataPoint) ->
     unsubscribe(Reporter, Metric, DataPoint, []).
 
+-dialyzer({no_return, unsubscribe/4}).
 -spec unsubscribe(module(), metric(), datapoint() | [datapoint()], extra()) ->
                          ok | not_found.
 %% @doc Removes a subscription.
@@ -725,6 +727,7 @@ do_start_reporters(S) ->
     end,
     S#st{}.
 
+-spec make_reporter_recs([{atom(), list()}]) -> [#reporter{}].
 make_reporter_recs([{R, Opts}|T]) when is_atom(R), is_list(Opts) ->
     [#reporter{name = R,
                module = get_module(R, Opts),
@@ -1527,6 +1530,7 @@ maybe_send_after(enabled, Key, Interval) when is_integer(Interval) ->
 maybe_send_after(_, _, _) ->
     undefined.
 
+-dialyzer({no_return, unsubscribe_/4}).
 unsubscribe_(Reporter, Metric, DataPoint, Extra) ->
     ?log(info, "unsubscribe_(~p, ~p, ~p, ~p)~n",
           [ Reporter, Metric, DataPoint, Extra]),
@@ -1544,12 +1548,10 @@ unsubscribe_(#subscriber{key = #key{reporter = Reporter,
                                     metric = Metric,
                                     datapoint = DataPoint,
                                     extra = Extra} = Key, t_ref = TRef}) ->
-    try_send(
-      Reporter, {exometer_unsubscribe, Metric, DataPoint, Extra}),
+    try_send(Reporter, {exometer_unsubscribe, Metric, DataPoint, Extra}),
     cancel_timer(TRef),
     ets:delete(?EXOMETER_SUBS, Key),
     ok.
-
 
 report_values(Found, #key{reporter = Reporter, extra = Extra} = Key) ->
     try Reporter ! {exometer_report, Found, Extra}
