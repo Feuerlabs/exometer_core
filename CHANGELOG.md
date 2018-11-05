@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.5.6](https://github.com/Feuerlabs/exometer_core/tree/v1.5.6) (2018-11-05)
+[Full Changelog](https://github.com/Feuerlabs/exometer_core/compare/1.5.5...v1.5.6)
+
+- Use rebar3 dialyzer plugin
+- Fix dialyzer warnings
+- Upgrade dep hut to v1.2.1
+
 ## [v1.5.5](https://github.com/Feuerlabs/exometer_core/tree/1.5.5) (2018-11-01)
 [Full Changelog](https://github.com/Feuerlabs/exometer_core/compare/1.5.4...1.5.5)
 
