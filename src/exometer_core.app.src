@@ -10,7 +10,8 @@
     stdlib,
     hut,
     setup,
-    folsom
+    folsom,
+    parse_trans
    ]},
   {included_applications,
    [
