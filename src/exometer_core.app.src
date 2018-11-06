@@ -2,7 +2,7 @@
 {application, exometer_core,
  [
   {description, "Code instrumentation and metrics collection package."},
-  {vsn, "1.5.6"},
+  {vsn, "1.5.7"},
   {registered, []},
   {applications,
    [

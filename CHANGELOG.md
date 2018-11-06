@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.5.7](https://github.com/Feuerlabs/exometer_core/tree/v1.5.7) (2018-11-06)
+[Full Changelog](https://github.com/Feuerlabs/exometer_core/compare/v1.5.6...v1.5.7)
+
+- Remove implicit rebar profiles when testing
+- Remove obsolete make target
+- Add parse_trans to applications
+
 ## [v1.5.6](https://github.com/Feuerlabs/exometer_core/tree/v1.5.6) (2018-11-05)
 [Full Changelog](https://github.com/Feuerlabs/exometer_core/compare/1.5.5...v1.5.6)
 
