@@ -16,8 +16,8 @@ clean-all: clean
 	rm -rf _build
 
 test:
-	$(REBAR3) as test do eunit
-	$(REBAR3) as test do ct
+	$(REBAR3) do eunit
+	$(REBAR3) do ct
 
 xref:
 	$(REBAR3) xref
