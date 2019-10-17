@@ -1,9 +1,13 @@
 sudo: false
 language: erlang
 script:
-    - rebar3 do eunit
-    - rebar3 ct --readable=false
+    - wget -c https://github.com/erlang/rebar3/releases/download/3.6.2/rebar3
+    - chmod +x rebar3
+    - ./rebar3 xref
+    - ./rebar3 dialyzer
+    - ./rebar3 do eunit
+    - ./rebar3 do ct
 otp_release:
-    - 21.0.7
+    - 21.2
     - 20.3
     - 19.3
