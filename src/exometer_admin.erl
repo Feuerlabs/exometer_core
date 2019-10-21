@@ -270,12 +270,18 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
         #exometer_entry{options = NewOpts} = E0 =
             lookup_definition(Name, Type, Opts),
 
-        case {ets:member(exometer_util:table(), Name), AllowExisting} of
-            {true, false} ->
+        case {ets:lookup(exometer_util:table(), Name), AllowExisting} of
+            {[_], false} ->
                 {reply, {error, exists}, S};
-            _Other ->
-		?log(debug, "_Other = ~p~n", [_Other]),
+            {LookupRes, _} ->
+		?log(debug, "LookupRes = ~p~n", [LookupRes]),
                 E1 = process_opts(E0, NewOpts),
+                try maybe_remove_old_instance(LookupRes, Name)
+                catch ?EXCEPTION(Cat, Exception, Stacktrace) ->
+                        ?log(debug, "CAUGHT(~p) ~p:~p / ~p",
+                             [Name, Cat, Exception, ?GET_STACK(Stacktrace)]),
+                        ok
+                end,
                 Res = try  exometer:create_entry(E1),
 			   exometer_report:new_entry(E1)
 		      catch
@@ -690,32 +696,9 @@ try_delete_entry_(Name) ->
 delete_entry_(Name) ->
     exometer_cache:delete_name(Name),
     case ets:lookup(exometer_util:table(), Name) of
-        [#exometer_entry{module = exometer, type = Type}] when Type==counter;
-                                                               Type==gauge ->
-            [ets:delete(T, Name) ||
-                T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
-            ok;
-        [#exometer_entry{module = exometer, type = fast_counter,
-                         ref = {M, F}}] ->
+        [#exometer_entry{} = Entry] ->
             try
-                exometer_util:set_call_count(M, F, false)
-            after
-                [ets:delete(T, Name) ||
-                    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
-            end,
-            ok;
-        [#exometer_entry{behaviour = probe,
-                         type = Type, ref = Ref}] ->
-            try
-                exometer_probe:delete(Name, Type, Ref)
-            after
-                [ets:delete(T, Name) ||
-                    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
-            end,
-            ok;
-        [#exometer_entry{module= Mod, behaviour = entry,
-                         type = Type, ref = Ref}] ->
-            try Mod:delete(Name, Type, Ref)
+                remove_old_instance(Entry, Name)
             after
                 [ets:delete(T, Name) ||
                     T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
@@ -724,3 +707,20 @@ delete_entry_(Name) ->
         [] ->
             {error, not_found}
     end.
+
+maybe_remove_old_instance([], _) ->
+    ok;
+maybe_remove_old_instance([Entry], Name) ->
+    remove_old_instance(Entry, Name).
+
+remove_old_instance(#exometer_entry{module = exometer, type = fast_counter,
+                                    ref = {M, F}}, _) ->
+    exometer_util:set_call_count(M, F, false);
+remove_old_instance(#exometer_entry{behaviour = probe,
+                                    type = Type, ref = Ref}, Name) ->
+    exometer_probe:delete(Name, Type, Ref);
+remove_old_instance(#exometer_entry{module = Mod, behaviour = entry,
+                                    type = Type, ref = Ref}, Name) ->
+    Mod:delete(Name, Type, Ref);
+remove_old_instance(_, _) ->
+    ok.

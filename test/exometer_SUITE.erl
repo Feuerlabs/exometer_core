@@ -36,6 +36,7 @@
     test_history1_slotslide/1,
     test_history4_slide/1,
     test_history4_slotslide/1,
+    test_re_register_probe/1,
     test_ext_predef/1,
     test_app_predef/1,
     test_function_match/1,
@@ -62,6 +63,7 @@ all() ->
      {group, test_counter},
      {group, test_defaults},
      {group, test_histogram},
+     {group, re_register},
      {group, test_setup},
      {group, test_info}
     ].
@@ -92,6 +94,10 @@ groups() ->
        test_history1_slotslide,
        test_history4_slide,
        test_history4_slotslide
+      ]},
+     {re_register, [shuffle],
+      [
+       test_re_register_probe
       ]},
      {test_setup, [shuffle],
       [
@@ -339,6 +345,18 @@ test_history4_slide(_Config) ->
 
 test_history4_slotslide(_Config) ->
     test_history(4, slot_slide, file_path("test/data/puts_time_hist4.bin")).
+
+test_re_register_probe(_Config) ->
+    K = ?LINE,
+    ok = exometer:re_register(S1 = [?MODULE, K, s, 1], spiral, []),  % re_register as new/3
+    P1 = exometer:info(S1, ref),
+    true = erlang:is_process_alive(P1),
+    ok = exometer:re_register(S1, spiral, []),
+    P2 = exometer:info(S1, ref),
+    true = (P1 =/= P2),
+    false = erlang:is_process_alive(P1),
+    true = erlang:is_process_alive(P2),
+    ok.
 
 file_path(F) ->
     filename:join(code:lib_dir(exometer_core), F).
