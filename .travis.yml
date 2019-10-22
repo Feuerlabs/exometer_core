@@ -1,7 +1,7 @@
 sudo: false
 language: erlang
 script:
-    - wget -c https://github.com/erlang/rebar3/releases/download/3.11.1/rebar3
+    - wget -c https://github.com/erlang/rebar3/releases/download/3.12.0/rebar3
     - chmod +x rebar3
     - REBAR3=./rebar3 make ci
 otp_release:
