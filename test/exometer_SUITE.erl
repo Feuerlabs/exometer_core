@@ -350,6 +350,7 @@ test_re_register_probe(_Config) ->
     K = ?LINE,
     ok = exometer:re_register(S1 = [?MODULE, K, s, 1], spiral, []),  % re_register as new/3
     P1 = exometer:info(S1, ref),
+    MRef = monitor(process, P1),  % in this specific case, we know P1 is a process
     true = erlang:is_process_alive(P1),
     ok = exometer:re_register(S1, spiral, []),
     P2 = exometer:info(S1, ref),
@@ -357,8 +358,12 @@ test_re_register_probe(_Config) ->
     %% removal of old probe is asynchronous ...
     %% TODO: some more sophistication in replacing the old instance
     %% might be called for.
-    timer:sleep(100),
-    false = erlang:is_process_alive(P1),
+    receive
+        {'DOWN', MRef, _, _, _} ->
+            ok
+    after 1000 ->
+            error(timeout)
+    end,
     true = erlang:is_process_alive(P2),
     ok.
 
