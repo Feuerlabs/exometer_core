@@ -274,29 +274,32 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
             {[_], false} ->
                 {reply, {error, exists}, S};
             {LookupRes, _} ->
-		?log(debug, "LookupRes = ~p~n", [LookupRes]),
+                ?log(debug, "LookupRes = ~p~n", [LookupRes]),
                 E1 = process_opts(E0, NewOpts),
-                try maybe_remove_old_instance(LookupRes, Name)
-                catch ?EXCEPTION(Cat, Exception, Stacktrace) ->
+                try
+                   remove_old_instance(LookupRes, Name)
+                catch
+                    ?EXCEPTION(Cat, Exception, Stacktrace1) ->
                         ?log(debug, "CAUGHT(~p) ~p:~p / ~p",
-                             [Name, Cat, Exception, ?GET_STACK(Stacktrace)]),
+                             [Name, Cat, Exception, ?GET_STACK(Stacktrace1)]),
                         ok
                 end,
-                Res = try  exometer:create_entry(E1),
-			   exometer_report:new_entry(E1)
-		      catch
-			  ?EXCEPTION(error, Error1, Stacktrace1) ->
-			      ?log(debug,
-				"ERROR create_entry(~p) :- ~p~n~p",
-				[E1, Error1, ?GET_STACK(Stacktrace1)]),
-			      erlang:error(Error1)
-		      end,
+                Res = try
+                          exometer:create_entry(E1),
+                          exometer_report:new_entry(E1)
+                      catch
+                          ?EXCEPTION(error, Error1, Stacktrace2) ->
+                              ?log(debug,
+                                   "ERROR create_entry(~p) :- ~p~n~p",
+                                   [E1, Error1, ?GET_STACK(Stacktrace2)]),
+                              erlang:error(Error1)
+                      end,
                 {reply, Res, S}
         end
     catch
         ?EXCEPTION(error, Error, Stacktrace) ->
-	    ?log(error, "~p -*-> error:~p~n~p~n",
-			[_Req, Error, ?GET_STACK(Stacktrace)]),
+            ?log(error, "~p -*-> error:~p~n~p~n",
+                 [_Req, Error, ?GET_STACK(Stacktrace)]),
             {reply, {error, Error}, S}
     end;
 handle_call({repair_entry, Name}, _From, S) ->
@@ -709,11 +712,10 @@ delete_entry_(Name) ->
             {error, not_found}
     end.
 
-maybe_remove_old_instance([], _) ->
+remove_old_instance([], _) ->
     ok;
-maybe_remove_old_instance([Entry], Name) ->
-    remove_old_instance(Entry, Name).
-
+remove_old_instance([Entry], Name) ->
+    remove_old_instance(Entry, Name);
 remove_old_instance(#exometer_entry{module = exometer, type = fast_counter,
                                     ref = {M, F}}, _) ->
     exometer_util:set_call_count(M, F, false);
