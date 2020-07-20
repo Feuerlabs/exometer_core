@@ -43,7 +43,8 @@
     test_ext_predef/1,
     test_app_predef/1,
     test_function_match/1,
-    test_status/1
+    test_status/1,
+    test_slide_ignore_outdated/1
    ]).
 
 %% utility exports
@@ -99,7 +100,8 @@ groups() ->
        test_history1_folsom,
        test_history4_slide,
        test_history4_slotslide,
-       test_history4_folsom
+       test_history4_folsom,
+       test_slide_ignore_outdated
       ]},
      {re_register, [shuffle],
       [
@@ -485,6 +487,36 @@ test_status(_Config) ->
      {options, Opts2},
      {ref, undefined}] = exometer:info(M1),
     ok.
+
+%% Ensure a slide ignores values which are outdated as per its configuration of
+%% time_span. This is important in cases with low update frequencies.
+test_slide_ignore_outdated(_Config) ->
+   M = [?MODULE, hist, ?LINE],
+
+   ok = exometer:new(
+          M, ad_hoc, [{module, exometer_histogram},
+                      {type, histogram},
+                      {histogram_module, exometer_slide},
+                      {time_span, 5}]),
+   % check that no entries exist
+   {ok, V1} = exometer:get_value(M),
+   0 = proplists:get_value(n, V1),
+
+   % add entry
+   ok = exometer:update(M, 1234),
+
+   % check that new entry exists
+   {ok, V2} = exometer:get_value(M),
+   1 = proplists:get_value(n, V2),
+
+   % wait
+   timer:sleep(10),
+
+   % check that entries have expired
+   {ok, V3} = exometer:get_value(M),
+   0 = proplists:get_value(n, V3),
+
+   ok.
 
 %%%===================================================================
 %%% Internal functions
