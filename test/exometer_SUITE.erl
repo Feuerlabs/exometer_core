@@ -507,7 +507,6 @@ test_slide_ignore_outdated(_Config) ->
 
    % check that new entry exists
    {ok, V2} = exometer:get_value(M),
-   ct:pal("~p", [V2]),
    1 = proplists:get_value(n, V2),
 
    % wait
