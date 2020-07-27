@@ -292,7 +292,7 @@ The grand total of all values received during the lifetime of the
 probe is also available.
 
 The available data points under a metric using the spiral entry
-are `count` and `one`.
+are `count` (grand total) and `one` (sum for the last time span).
 
 
 #### <a name="exometer_folsom_[entry]">exometer_folsom [entry]</a> ####
