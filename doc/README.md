@@ -291,6 +291,9 @@ values reported during the last minute.
 The grand total of all values received during the lifetime of the
 probe is also available.
 
+The available data points under a metric using the spiral entry
+are `count` and `one`.
+
 
 #### <a name="exometer_folsom_[entry]">exometer_folsom [entry]</a> ####
 
