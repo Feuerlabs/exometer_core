@@ -710,7 +710,7 @@ datapoints(D, _) when is_integer(D) ->
 datapoints(D, _) when is_list(D) ->
     D.
 
--spec info(name()) -> [{info(), any()}].
+-spec info(name()) -> [{info(), any()}] | undefined.
 %% @doc Returns a list of info items for Metric, see {@link info/2}.
 info(Name) ->
     case ets:lookup(exometer_util:table(), Name) of
