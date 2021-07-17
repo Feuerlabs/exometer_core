@@ -216,7 +216,7 @@ format_status(Opt, StatusData) ->
                       lists:flatten(io_lib:fwrite("~w", [Name]))
               end,
     Header = lists:concat(["Status for exometer_proc ", NameTag]),
-    Log = sys:get_debug(log, Debug, []),
+    Log = sys:get_log(Debug),
     Specific =
         case erlang:function_exported(Mod, format_status, 2) of
             true ->
