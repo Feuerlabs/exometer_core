@@ -415,7 +415,4 @@ avg_transform(_TS, { Count, Total }) ->
 
 
 timestamp() ->
-    %% Invented epoc is {1258,0,0}, or 2009-11-12, 4:26:40
-    %% Millisecond resolution
-    {MS,S,US} = os:timestamp(),
-    (MS-1258)*1000000000 + S*1000 + US div 1000.
+    exometer_util:timestamp().
