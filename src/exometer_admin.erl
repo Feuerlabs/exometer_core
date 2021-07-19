@@ -48,7 +48,7 @@
 -export([monitor/2, monitor/3, demonitor/1]).
 
 -compile({no_auto_import, [monitor/3]}).
--include_lib("hut/include/hut.hrl").
+-include_lib("kernel/include/logger.hrl").
 -include("exometer.hrl").
 
 -record(st, {}).
@@ -127,7 +127,7 @@ do_load_defaults(Src, L) when is_list(L) ->
               try set_default(NamePattern, Type, Spec)
               catch
                   error:E ->
-                      ?log(error, "Defaults(~p): ERROR: ~p~n", [Src, E])
+                      ?LOG_ERROR("Defaults(~p): ERROR: ~p~n", [Src, E])
               end
       end, L).
 
@@ -145,7 +145,7 @@ do_load_predef(Src, L) when is_list(L) ->
                 fun({K,_,_}) ->
                         predef_delete_entry(K, Src);
                    (Other) ->
-                        ?log(error, "Predef(~p): ~p~n",
+                        ?LOG_ERROR("Predef(~p): ~p~n",
                                     [Src, {bad_pattern,Other}])
                 end, Found);
          ({aliases, Aliases}) ->
@@ -159,7 +159,7 @@ predef_delete_entry(Key, Src) ->
     case delete_entry(Key) of
         ok -> ok;
         Error ->
-            ?log(error, "Predef(~p): ~p~n", [Src, Error])
+            ?LOG_ERROR("Predef(~p): ~p~n", [Src, Error])
     end.
 
 ok({ok, Res}, _) -> Res;
@@ -274,13 +274,13 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
             {[_], false} ->
                 {reply, {error, exists}, S};
             {LookupRes, _} ->
-                ?log(debug, "LookupRes = ~p~n", [LookupRes]),
+                ?LOG_DEBUG("LookupRes = ~p~n", [LookupRes]),
                 E1 = process_opts(E0, NewOpts),
                 try
                    remove_old_instance(LookupRes, Name)
                 catch
                     ?EXCEPTION(Cat, Exception, Stacktrace1) ->
-                        ?log(debug, "CAUGHT(~p) ~p:~p / ~p",
+                        ?LOG_DEBUG("CAUGHT(~p) ~p:~p / ~p",
                              [Name, Cat, Exception, ?GET_STACK(Stacktrace1)]),
                         ok
                 end,
@@ -289,8 +289,7 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
                           exometer_report:new_entry(E1)
                       catch
                           ?EXCEPTION(error, Error1, Stacktrace2) ->
-                              ?log(debug,
-                                   "ERROR create_entry(~p) :- ~p~n~p",
+                              ?LOG_DEBUG("ERROR create_entry(~p) :- ~p~n~p",
                                    [E1, Error1, ?GET_STACK(Stacktrace2)]),
                               erlang:error(Error1)
                       end,
@@ -298,7 +297,7 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
         end
     catch
         ?EXCEPTION(error, Error, Stacktrace) ->
-            ?log(error, "~p -*-> error:~p~n~p~n",
+            ?LOG_ERROR("~p -*-> error:~p~n~p~n",
                  [_Req, Error, ?GET_STACK(Stacktrace)]),
             {reply, {error, Error}, S}
     end;
@@ -457,14 +456,14 @@ on_error(Name, delete) ->
     try_delete_entry_(Name);
 on_error(_Proc, _OnError) ->
     %% Not good, but will do for now.
-    ?log(debug, "Unrecognized OnError: ~p (~p)~n", [_OnError, _Proc]),
+    ?LOG_DEBUG("Unrecognized OnError: ~p (~p)~n", [_OnError, _Proc]),
     ok.
 
 call_restart(M, F, A) ->
     apply(M, F, A).
 
 restart_failed(Name, Error) ->
-    ?log(debug, "Restart failed ~p: ~p~n", [Name, Error]),
+    ?LOG_DEBUG("Restart failed ~p: ~p~n", [Name, Error]),
     if is_list(Name) ->
 	    try_delete_entry_(Name);
        true ->
@@ -682,7 +681,7 @@ try_disable_entry_(Name) when is_list(Name) ->
     try exometer:setopts(Name, [{status, disabled}])
     catch
         error:Err ->
-            ?log(debug, "Couldn't disable ~p: ~p~n", [Name, Err]),
+            ?LOG_DEBUG("Couldn't disable ~p: ~p~n", [Name, Err]),
             try_delete_entry_(Name)
     end;
 try_disable_entry_(_Name) ->
@@ -692,7 +691,7 @@ try_delete_entry_(Name) ->
     try delete_entry_(Name)
     catch
 	error:R ->
-	    ?log(debug, "Couldn't delete ~p: ~p~n", [Name, R]),
+	    ?LOG_DEBUG("Couldn't delete ~p: ~p~n", [Name, R]),
 	    ok
     end.
 
