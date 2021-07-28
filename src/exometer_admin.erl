@@ -48,7 +48,7 @@
 -export([monitor/2, monitor/3, demonitor/1]).
 
 -compile({no_auto_import, [monitor/3]}).
--include_lib("hut/include/hut.hrl").
+-include_lib("kernel/include/logger.hrl").
 -include("exometer.hrl").
 
 -record(st, {}).
@@ -127,7 +127,7 @@ do_load_defaults(Src, L) when is_list(L) ->
               try set_default(NamePattern, Type, Spec)
               catch
                   error:E ->
-                      ?log(error, "Defaults(~p): ERROR: ~p~n", [Src, E])
+                      ?LOG_ERROR("Defaults(~p): ERROR: ~p~n", [Src, E])
               end
       end, L).
 
@@ -145,7 +145,7 @@ do_load_predef(Src, L) when is_list(L) ->
                 fun({K,_,_}) ->
                         predef_delete_entry(K, Src);
                    (Other) ->
-                        ?log(error, "Predef(~p): ~p~n",
+                        ?LOG_ERROR("Predef(~p): ~p~n",
                                     [Src, {bad_pattern,Other}])
                 end, Found);
          ({aliases, Aliases}) ->
@@ -159,7 +159,7 @@ predef_delete_entry(Key, Src) ->
     case delete_entry(Key) of
         ok -> ok;
         Error ->
-            ?log(error, "Predef(~p): ~p~n", [Src, Error])
+            ?LOG_ERROR("Predef(~p): ~p~n", [Src, Error])
     end.
 
 ok({ok, Res}, _) -> Res;
@@ -270,27 +270,35 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
         #exometer_entry{options = NewOpts} = E0 =
             lookup_definition(Name, Type, Opts),
 
-        case {ets:member(exometer_util:table(), Name), AllowExisting} of
-            {true, false} ->
+        case {ets:lookup(exometer_util:table(), Name), AllowExisting} of
+            {[_], false} ->
                 {reply, {error, exists}, S};
-            _Other ->
-		?log(debug, "_Other = ~p~n", [_Other]),
+            {LookupRes, _} ->
+                ?LOG_DEBUG("LookupRes = ~p~n", [LookupRes]),
                 E1 = process_opts(E0, NewOpts),
-                Res = try  exometer:create_entry(E1),
-			   exometer_report:new_entry(E1)
-		      catch
-			  ?EXCEPTION(error, Error1, Stacktrace1) ->
-			      ?log(debug,
-				"ERROR create_entry(~p) :- ~p~n~p",
-				[E1, Error1, ?GET_STACK(Stacktrace1)]),
-			      erlang:error(Error1)
-		      end,
+                try
+                   remove_old_instance(LookupRes, Name)
+                catch
+                    ?EXCEPTION(Cat, Exception, Stacktrace1) ->
+                        ?LOG_DEBUG("CAUGHT(~p) ~p:~p / ~p",
+                             [Name, Cat, Exception, ?GET_STACK(Stacktrace1)]),
+                        ok
+                end,
+                Res = try
+                          exometer:create_entry(E1),
+                          exometer_report:new_entry(E1)
+                      catch
+                          ?EXCEPTION(error, Error1, Stacktrace2) ->
+                              ?LOG_DEBUG("ERROR create_entry(~p) :- ~p~n~p",
+                                   [E1, Error1, ?GET_STACK(Stacktrace2)]),
+                              erlang:error(Error1)
+                      end,
                 {reply, Res, S}
         end
     catch
         ?EXCEPTION(error, Error, Stacktrace) ->
-	    ?log(error, "~p -*-> error:~p~n~p~n",
-			[_Req, Error, ?GET_STACK(Stacktrace)]),
+            ?LOG_ERROR("~p -*-> error:~p~n~p~n",
+                 [_Req, Error, ?GET_STACK(Stacktrace)]),
             {reply, {error, Error}, S}
     end;
 handle_call({repair_entry, Name}, _From, S) ->
@@ -448,14 +456,14 @@ on_error(Name, delete) ->
     try_delete_entry_(Name);
 on_error(_Proc, _OnError) ->
     %% Not good, but will do for now.
-    ?log(debug, "Unrecognized OnError: ~p (~p)~n", [_OnError, _Proc]),
+    ?LOG_DEBUG("Unrecognized OnError: ~p (~p)~n", [_OnError, _Proc]),
     ok.
 
 call_restart(M, F, A) ->
     apply(M, F, A).
 
 restart_failed(Name, Error) ->
-    ?log(debug, "Restart failed ~p: ~p~n", [Name, Error]),
+    ?LOG_DEBUG("Restart failed ~p: ~p~n", [Name, Error]),
     if is_list(Name) ->
 	    try_delete_entry_(Name);
        true ->
@@ -673,7 +681,7 @@ try_disable_entry_(Name) when is_list(Name) ->
     try exometer:setopts(Name, [{status, disabled}])
     catch
         error:Err ->
-            ?log(debug, "Couldn't disable ~p: ~p~n", [Name, Err]),
+            ?LOG_DEBUG("Couldn't disable ~p: ~p~n", [Name, Err]),
             try_delete_entry_(Name)
     end;
 try_disable_entry_(_Name) ->
@@ -683,39 +691,16 @@ try_delete_entry_(Name) ->
     try delete_entry_(Name)
     catch
 	error:R ->
-	    ?log(debug, "Couldn't delete ~p: ~p~n", [Name, R]),
+	    ?LOG_DEBUG("Couldn't delete ~p: ~p~n", [Name, R]),
 	    ok
     end.
 
 delete_entry_(Name) ->
     exometer_cache:delete_name(Name),
     case ets:lookup(exometer_util:table(), Name) of
-        [#exometer_entry{module = exometer, type = Type}] when Type==counter;
-                                                               Type==gauge ->
-            [ets:delete(T, Name) ||
-                T <- [?EXOMETER_ENTRIES|exometer_util:tables()]],
-            ok;
-        [#exometer_entry{module = exometer, type = fast_counter,
-                         ref = {M, F}}] ->
+        [#exometer_entry{} = Entry] ->
             try
-                exometer_util:set_call_count(M, F, false)
-            after
-                [ets:delete(T, Name) ||
-                    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
-            end,
-            ok;
-        [#exometer_entry{behaviour = probe,
-                         type = Type, ref = Ref}] ->
-            try
-                exometer_probe:delete(Name, Type, Ref)
-            after
-                [ets:delete(T, Name) ||
-                    T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
-            end,
-            ok;
-        [#exometer_entry{module= Mod, behaviour = entry,
-                         type = Type, ref = Ref}] ->
-            try Mod:delete(Name, Type, Ref)
+                remove_old_instance(Entry, Name)
             after
                 [ets:delete(T, Name) ||
                     T <- [?EXOMETER_ENTRIES|exometer_util:tables()]]
@@ -724,3 +709,19 @@ delete_entry_(Name) ->
         [] ->
             {error, not_found}
     end.
+
+remove_old_instance([], _) ->
+    ok;
+remove_old_instance([Entry], Name) ->
+    remove_old_instance(Entry, Name);
+remove_old_instance(#exometer_entry{module = exometer, type = fast_counter,
+                                    ref = {M, F}}, _) ->
+    exometer_util:set_call_count(M, F, false);
+remove_old_instance(#exometer_entry{behaviour = probe,
+                                    type = Type, ref = Ref}, Name) ->
+    exometer_probe:delete(Name, Type, Ref);
+remove_old_instance(#exometer_entry{module = Mod, behaviour = entry,
+                                    type = Type, ref = Ref}, Name) ->
+    Mod:delete(Name, Type, Ref);
+remove_old_instance(_, _) ->
+    ok.

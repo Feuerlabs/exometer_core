@@ -1,0 +1,27 @@
+ name: CI
+
+ on:
+   push:
+     branches: [ master ]
+   pull_request:
+     branches: [ master ]
+
+ jobs:
+   test:
+     name: OTP ${{matrix.otp}}
+     strategy:
+       matrix:
+         otp: ['24.0', '23.3.1']
+     runs-on: 'ubuntu-20.04'
+     steps:
+       - uses: actions/checkout@v2
+       - uses: erlef/setup-beam@v1
+         with:
+           otp-version: ${{ matrix.otp }}
+           rebar3-version: '3.16.1'
+       - run: rebar3 compile
+       - run: rebar3 xref
+       - run: rebar3 dialyzer
+       - run: rebar3 eunit
+       - run: rebar3 ct
+
