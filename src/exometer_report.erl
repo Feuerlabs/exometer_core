@@ -1508,7 +1508,6 @@ terminate_reporter(#reporter{pid = undefined}) ->
 
 subscribe_(Reporter, Metric, DataPoint, Interval, RetryFailedMetrics,
            Extra, Status) ->
-    ?log(debug, "subscribe_(~p, ~p, ~p, ~p, ~p, ~p, ~p)~n", [Reporter, Metric, DataPoint, Interval, RetryFailedMetrics, Extra, Status]),
     Key = #key{reporter = Reporter,
                metric = Metric,
                datapoint = DataPoint,
@@ -1516,12 +1515,15 @@ subscribe_(Reporter, Metric, DataPoint, Interval, RetryFailedMetrics,
                retry_failed_metrics = RetryFailedMetrics
               },
     case ets:lookup(?EXOMETER_SUBS, Key) of
-        [] -> ets:insert(?EXOMETER_SUBS,
-                 #subscriber{key = Key,
-                             interval = Interval,
-                             t_ref = maybe_send_after(Status, Key, Interval)});
+        [] ->
+            ?log(debug, "subscribe_(~p, ~p, ~p, ~p, ~p, ~p, ~p)~n",
+                 [Reporter, Metric, DataPoint, Interval, RetryFailedMetrics, Extra, Status]),
+            ets:insert(?EXOMETER_SUBS,
+                       #subscriber{key = Key,
+                                   interval = Interval,
+                                   t_ref = maybe_send_after(Status, Key, Interval)});
         _ ->
-            ?log(debug, "subscribe_(): not adding duplicate subscription")
+            ok
         end.
 
 maybe_send_after(enabled, Key, Interval) when is_integer(Interval) ->
@@ -1532,13 +1534,13 @@ maybe_send_after(_, _, _) ->
 
 -dialyzer({no_return, unsubscribe_/4}).
 unsubscribe_(Reporter, Metric, DataPoint, Extra) ->
-    ?log(info, "unsubscribe_(~p, ~p, ~p, ~p)~n",
-          [ Reporter, Metric, DataPoint, Extra]),
     case ets:lookup(?EXOMETER_SUBS, #key{reporter = Reporter,
                                          metric = Metric,
                                          datapoint = DataPoint,
                                          extra = Extra}) of
         [#subscriber{} = Sub] ->
+            ?log(info, "unsubscribe_(~p, ~p, ~p, ~p)~n",
+                 [ Reporter, Metric, DataPoint, Extra]),
             unsubscribe_(Sub);
         [] ->
             not_found

@@ -274,7 +274,6 @@ handle_call({new_entry, Name, Type, Opts, AllowExisting} = _Req, _From, S) ->
             {[_], false} ->
                 {reply, {error, exists}, S};
             {LookupRes, _} ->
-                ?log(debug, "LookupRes = ~p~n", [LookupRes]),
                 E1 = process_opts(E0, NewOpts),
                 try
                    remove_old_instance(LookupRes, Name)
