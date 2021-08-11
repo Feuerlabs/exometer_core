@@ -1,6 +1,6 @@
 {application,exometer_core,
              [{description,"Code instrumentation and metrics collection package."},
-              {vsn,"1.5.7"},
+              {vsn,git},
               {registered,[]},
               {applications,[kernel,stdlib,hut,setup,folsom,parse_trans]},
               {included_applications,[]},
