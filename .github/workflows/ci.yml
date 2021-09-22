@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test_till_otp_22:
+    name: Run tests on OTP ${{matrix.otp}}
+    strategy:
+      matrix:
+        otp: [21.3]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          rebar3-version: '3.15.2'
+      - run: rebar3 compile
+      - run: rebar3 xref
+      - run: rebar3 dialyzer
+      - run: rebar3 eunit
+      - run: rebar3 ct
+
+  test_till_otp_24:
+    name: Run tests on OTP ${{matrix.otp}}
+    strategy:
+      matrix:
+        otp: [22.3, 23.3, 24.1]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          rebar3-version: '3.17'
+      - run: rebar3 compile
+      - run: rebar3 xref
+      - run: rebar3 dialyzer
+      - run: rebar3 eunit
+      - run: rebar3 ct
