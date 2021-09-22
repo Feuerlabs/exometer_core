@@ -37,7 +37,7 @@
 -record(st, {mon = orddict:new()}).
 
 -include_lib("parse_trans/include/codegen.hrl").
--include_lib("hut/include/hut.hrl").
+-include_lib("kernel/include/logger.hrl").
 -include("exometer.hrl").
 
 -type type() :: exometer:type().
@@ -126,10 +126,10 @@ init_monitor([_|_]) ->
 do_init_monitor() ->
     case is_transformed() of
         true ->
-            ?log(debug, "already transformed...~n", []),
+            ?LOG_DEBUG("already transformed...~n", []),
             ok;
         false ->
-            ?log(debug, "transforming folsom_metrics...~n", []),
+            ?LOG_DEBUG("transforming folsom_metrics...~n", []),
             parse_trans_mod:transform_module(folsom_metrics, fun pt/2, [])
     end.
 
@@ -211,7 +211,7 @@ maybe_create(CB, [FolsomType, Name | Args]) ->
             ignore
     catch
         Cat:Msg ->
-            ?log(error, "~p:copy_folsom(~p,~p,~p): ~p:~p~n",
-                        [CB, Name, FolsomType, Args, Cat, Msg]),
+            ?LOG_ERROR("~p:copy_folsom(~p,~p,~p): ~p:~p~n",
+                       [CB, Name, FolsomType, Args, Cat, Msg]),
             ignore
     end.
