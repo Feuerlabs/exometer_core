@@ -24,6 +24,7 @@
     test_gauge/1,
     test_fast_counter/1,
     test_crashing_function/1,
+    test_eval_script_match_case/1,
     test_wrapping_counter/1,
     test_update_or_create/1,
     test_update_or_create2/1,
@@ -80,6 +81,7 @@ groups() ->
         test_gauge,
         test_fast_counter,
         test_crashing_function,
+        test_eval_script_match_case,
         test_wrapping_counter
       ]},
      {test_defaults, [shuffle],
@@ -236,6 +238,29 @@ test_crashing_function(_Config) ->
     ok = exometer:new(C2, {function, ?MODULE, crash_fun, [], valie, [value]}, [{cache, 5000}]),
     {ok, {error, unavailable}} = exometer:get_value(C1, [value]),
     {ok, {error, unavailable}} = exometer:get_value(C2, [value]),
+    ok.
+
+%% Test running a script containing the pattern K = case X of ... end.
+test_eval_script_match_case(_Config) ->
+    C = [?MODULE, eval, ?LINE],
+    ok = exometer:new(C,{function,erlang,memory,[],
+                         eval,
+                         {[{fold,'X','Y',
+                            [{m,{v,'K'},
+                              {'case',[{v,'X'}],
+                               [{{a,bin},[],
+                                 [{a,binary}]},
+                                {{v,'_'},[],
+                                 [{v,'X'}]}]}},
+                             {cons,{t,[{v,'X'},{call,{proplists,get_value},
+                                                [{v,'K'},{v,'Value'}]}]},
+                              {v,'Y'}}],nil,{v,'DPs'}}],
+                          [bin,atom]}}),
+    {ok, Res1} = exometer:get_value(C),
+    [{atom,Va},{bin,Vb}] = lists:sort(Res1),
+    true = lists:all(fun is_integer/1, [Va, Vb]),
+    {ok, [{bin, _}]} = exometer:get_value(C, bin),
+    {ok, [{bin, _}]} = exometer:get_value(C, [bin]),
     ok.
 
 test_wrapping_counter(_Config) ->
