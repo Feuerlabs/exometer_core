@@ -44,8 +44,7 @@ optional packages, both users and developers.
     4. {@section exometer_histogram (probe)}
     5. {@section exometer_uniform (probe)}
     6. {@section exometer_spiral (probe)}
-    7. {@section exometer_folsom [entry]}
-    8. {@section exometer_function [entry]}
+    7. {@section exometer_function [entry]}
 3. {@section Built in Reporters}
     1. {@section exometer_report_tty}
 4. {@section Instrumenting Erlang code}
@@ -128,10 +127,6 @@ as a uniform distribution or a regular histogram.
 
 The various outputs from these entries are reported as data points
 under the given metric.
-
-An entry can also interface external analytics packages.
-`exometer_folsom', for example, integrates with the
-`folsom_metrics' package found at [https://github.com/boundary/folsom].
 
 === Probe ===
 
@@ -272,16 +267,6 @@ values reported during the last minute.
 The grand total of all values received during the lifetime of the
 probe is also available.
 
-=== exometer_folsom [entry] ===
-
-The folsom entry integrates with the folsom metrics package provided
-by the boundary repo at github. Updated values sent to the folsom entry
-can be forwarded to folsom's counter, histogram, duration, meter,
-and spiral.
-
-Folsom integration is provided as a backup. New code using Exometer Core
-should use the native probes that duplicate folsom.
-
 === exometer_function [entry] ===
 
 The function entry allows for a simple caller-supplied function to be
@@ -322,10 +307,6 @@ Note that dependent applications need to be started first. On newer OTP versions
 (R61B or later), you can use `application:ensure_all_started(exometer)'.
 
 For testing, you can also use {@link exometer:start/0}.
-
-If you make use of e.g. folsom metrics, you also need to start `folsom'.
-Exometer Core will not do that automatically, nor does it contain an
-application dependency for it.
 
 See {@section Configuring Exometer Core} for details on configuration data
 format.
@@ -468,10 +449,7 @@ Below is an example, from `exometer_core/priv/app.config':
         {['_'], function , [{module, exometer_function}]},
         {['_'], counter  , [{module, exometer}]},
         {['_'], histogram, [{module, exometer_histogram}]},
-        {['_'], spiral   , [{module, exometer_spiral}]},
-        {['_'], duration , [{module, exometer_folsom}]},
-        {['_'], meter    , [{module, exometer_folsom}]},
-        {['_'], gauge    , [{module, exometer_folsom}]}
+        {['_'], spiral   , [{module, exometer_spiral}]}
     ]}
 ]}</pre>
 
@@ -483,10 +461,7 @@ defaults would be as follows:
 exometer.template.function.module  = exometer_function
 exometer.template.counter.module   = exometer
 exometer.template.histogram.module = exometer_histogram
-exometer.template.spiral.module    = exometer_spiral
-exometer.template.duration.module  = exometer_folsom
-exometer.template.meter.module     = exometer_folsom
-exometer.template.gauge.module     = exometer_folsom</pre>
+exometer.template.spiral.module    = exometer_spiral</pre>
 
 === Configuring statically defined entries ===
 

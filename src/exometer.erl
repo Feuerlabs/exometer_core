@@ -24,9 +24,7 @@
 %%            {['_'], fast_counter, [{module, exometer}]},
 %%            {['_'], gauge       , [{module, exometer}]},
 %%            {['_'], histogram   , [{module, exometer_histogram}]},
-%%            {['_'], spiral      , [{module, exometer_spiral}]},
-%%            {['_'], duration    , [{module, exometer_folsom}]},
-%%            {['_'], meter       , [{module, exometer_folsom}]},
+%%            {['_'], spiral      , [{module, exometer_spiral}]}
 %%           ]}
 %%         ]}
 %% </pre>
