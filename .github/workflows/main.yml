@@ -1,0 +1,22 @@
+name: Exometer CI
+
+on: [pull_request, push]
+
+jobs:
+  linux:
+    name: Test on OTP ${{ matrix.otp_version }} and ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        otp_version: [24, 25, 26]
+        os: [ubuntu-latest]
+
+    container:
+      image: erlang:${{ matrix.otp_version }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: CI tests
+      run: make ci

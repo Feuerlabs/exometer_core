@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Basho Technologies, Inc.  All Rights Reserved.
 
-__Version:__ Oct 30 2018 13:49:09
+__Version:__ Feb 16 2024 16:48:36
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 
@@ -48,8 +48,7 @@ optional packages, both users and developers.
     4. [exometer_histogram (probe)](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_histogram_(probe))
     5. [exometer_uniform (probe)](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_uniform_(probe))
     6. [exometer_spiral (probe)](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_spiral_(probe))
-    7. [exometer_folsom [entry]](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_folsom_[entry])
-    8. [exometer_function [entry]](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_function_[entry])
+    7. [exometer_function [entry]](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_function_[entry])
 3. [Built in Reporters](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#Built_in_Reporters)
     1. [exometer_report_tty](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#exometer_report_tty)
 4. [Instrumenting Erlang code](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#Instrumenting_Erlang_code)
@@ -136,10 +135,6 @@ as a uniform distribution or a regular histogram.
 
 The various outputs from these entries are reported as data points
 under the given metric.
-
-An entry can also interface external analytics packages.
-`exometer_folsom`, for example, integrates with the
-`folsom_metrics` package found at [`https://github.com/boundary/folsom`](https://github.com/boundary/folsom).
 
 
 #### <a name="Probe">Probe</a> ####
@@ -292,17 +287,6 @@ The grand total of all values received during the lifetime of the
 probe is also available.
 
 
-#### <a name="exometer_folsom_[entry]">exometer_folsom [entry]</a> ####
-
-The folsom entry integrates with the folsom metrics package provided
-by the boundary repo at github. Updated values sent to the folsom entry
-can be forwarded to folsom's counter, histogram, duration, meter,
-and spiral.
-
-Folsom integration is provided as a backup. New code using Exometer Core
-should use the native probes that duplicate folsom.
-
-
 #### <a name="exometer_function_[entry]">exometer_function [entry]</a> ####
 
 The function entry allows for a simple caller-supplied function to be
@@ -349,10 +333,6 @@ Note that dependent applications need to be started first. On newer OTP versions
 (R61B or later), you can use `application:ensure_all_started(exometer)`.
 
 For testing, you can also use [`exometer:start/0`](https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer.md#start-0).
-
-If you make use of e.g. folsom metrics, you also need to start `folsom`.
-Exometer Core will not do that automatically, nor does it contain an
-application dependency for it.
 
 See [Configuring Exometer Core](https://github.com/Feuerlabs/exometer_core/blob/master/doc/README.md#Configuring_Exometer_Core) for details on configuration data
 format.
@@ -521,10 +501,7 @@ Below is an example, from `exometer_core/priv/app.config`:
         {['_'], function , [{module, exometer_function}]},
         {['_'], counter  , [{module, exometer}]},
         {['_'], histogram, [{module, exometer_histogram}]},
-        {['_'], spiral   , [{module, exometer_spiral}]},
-        {['_'], duration , [{module, exometer_folsom}]},
-        {['_'], meter    , [{module, exometer_folsom}]},
-        {['_'], gauge    , [{module, exometer_folsom}]}
+        {['_'], spiral   , [{module, exometer_spiral}]}
     ]}
 ]}
 ```
@@ -539,9 +516,6 @@ exometer.template.function.module  = exometer_function
 exometer.template.counter.module   = exometer
 exometer.template.histogram.module = exometer_histogram
 exometer.template.spiral.module    = exometer_spiral
-exometer.template.duration.module  = exometer_folsom
-exometer.template.meter.module     = exometer_folsom
-exometer.template.gauge.module     = exometer_folsom
 ```
 
 
@@ -728,7 +702,6 @@ processing is complete.
 
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exo_montest.md" class="module">exo_montest</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer.md" class="module">exometer</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_admin.md" class="module">exometer_admin</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_alias.md" class="module">exometer_alias</a></td></tr>
@@ -736,11 +709,8 @@ processing is complete.
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_cpu.md" class="module">exometer_cpu</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_duration.md" class="module">exometer_duration</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_entry.md" class="module">exometer_entry</a></td></tr>
-<tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_folsom.md" class="module">exometer_folsom</a></td></tr>
-<tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_folsom_monitor.md" class="module">exometer_folsom_monitor</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_function.md" class="module">exometer_function</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_histogram.md" class="module">exometer_histogram</a></td></tr>
-<tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_igor.md" class="module">exometer_igor</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_info.md" class="module">exometer_info</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_probe.md" class="module">exometer_probe</a></td></tr>
 <tr><td><a href="https://github.com/Feuerlabs/exometer_core/blob/master/doc/exometer_proc.md" class="module">exometer_proc</a></td></tr>
