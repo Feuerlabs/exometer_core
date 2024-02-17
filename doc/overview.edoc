@@ -6,10 +6,9 @@
 
 @doc
 
-[![Travis][travis badge]][travis]
+[![CI workflow](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)](https://github.com/github/docs/actions/workflows/main.yml)
 [![Hex.pm Version][hex version badge]][hex]
 [![Hex.pm License][hex license badge]][hex]
-[![Erlang Versions][erlang version badge]][travis]
 [![Build Tool][build tool]][hex]
 
 The Exometer Core package allows for easy and efficient instrumentation of

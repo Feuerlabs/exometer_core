@@ -4,14 +4,13 @@
 
 Copyright (c) 2014 Basho Technologies, Inc.  All Rights Reserved.
 
-__Version:__ Feb 16 2024 16:48:36
+__Version:__ Feb 17 2024 13:59:12
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 
-[![Travis][travis badge]][travis]
+[![CI workflow](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)](https://github.com/github/docs/actions/workflows/main.yml)
 [![Hex.pm Version][hex version badge]][hex]
 [![Hex.pm License][hex license badge]][hex]
-[![Erlang Versions][erlang version badge]][travis]
 [![Build Tool][build tool]][hex]
 
 The Exometer Core package allows for easy and efficient instrumentation of
