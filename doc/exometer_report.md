@@ -42,7 +42,7 @@ will be invoked to notify the plugin of the new metrics subscription.
 to the recipient through a previous `exometer_report()` function.
 
 + Tear down subscription<br />When `exometer_report:unsubscribe()` is called, addressing the
-custom report plugin, the recipient's `exometer_unsubscribe()` function
+custom report plugin, the recipient's `Mod:exometer_unsubscribe/4` function
 will be invoked to notify the plugin of the deleted subscription.
 
 The following chapters details each of the callbacks to be implemented
@@ -64,7 +64,7 @@ new plugin and return a state to be used in future plugin calls.
 + `Options`<br />Provides the prop list with attributes from the application environment
 for the cusom recipient. See [Configuring reporter plugins](#Configuring_reporter_plugins) for
 
-The `exomoeter_init()` function should return `{ok, State}` where
+The `Mod:exometer_init/1` function should return `{ok, State}` where
 State is a tuple that will be provided as a reference argument to
 future calls made into the plugin. Any other return formats will
 cancel the creation of the custom reporting plugin.
@@ -72,7 +72,7 @@ cancel the creation of the custom reporting plugin.
 
 #### <a name="exometer_subscribe/5">exometer_subscribe/5</a> ####
 
-The `exometer_subscribe()` function is invoked as follows:
+The `Mod:exometer_subscribe/5` function is invoked as follows:
 
 ```erlang
 
@@ -106,7 +106,7 @@ generate an error log message by exometer.
 
 #### <a name="exometer_report/5">exometer_report/5</a> ####
 
-The `exometer_report()` function is invoked as follows:
+The `Mod:exometer_report/5` function is invoked as follows:
 
 ```erlang
 
@@ -136,7 +136,7 @@ generate an error log message by exometer.
 
 #### <a name="exometer_unsubscribe/4">exometer_unsubscribe/4</a> ####
 
-The `exometer_unsubscribe()` function is invoked as follows:
+The `Mod:exometer_unsubscribe/4` function is invoked as follows:
 
 ```erlang
 
@@ -146,7 +146,7 @@ The `exometer_unsubscribe()` function is invoked as follows:
 The custom plugin can use this notification to modify and return its
 state in order to free resources used to maintain the now de-activated
 subscription. When this call returns, the given metric / data point
-will not be present in future calls to `exometer_report()`.
+will not be present in future calls to `exometer_report/5`.
 
 + `Metric`<br />Specifies the metric that is now subscribed to by the plugin
 as a list of atoms.
@@ -161,7 +161,7 @@ can understand.
 
 + `State`<br />Contains the state returned by the last called plugin function.
 
-The `exometer_unsubscribe()` function should return `{ok, State}` where
+The `Mod:exometer_unsubscribe/4` function should return `{ok, State}` where
 State is a tuple that will be provided as a reference argument to
 future calls made into the plugin. Any other return formats will
 generate an error log message by exometer.
