@@ -8,7 +8,7 @@ __Version:__ Feb 17 2024 13:59:12
 
 __Authors:__ Ulf Wiger ([`ulf.wiger@feuerlabs.com`](mailto:ulf.wiger@feuerlabs.com)), Magnus Feuer ([`magnus.feuer@feuerlabs.com`](mailto:magnus.feuer@feuerlabs.com)).
 
-[![CI workflow](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)](https://github.com/github/docs/actions/workflows/main.yml)
+[![Build Status](https://github.com/Feuerlabs/exometer_core/actions/workflows/main.yml/badge.svg)](https://github.com/Feuerlabs/exometer_core/actions/workflows/main.yml)
 [![Hex.pm Version][hex version badge]][hex]
 [![Hex.pm License][hex license badge]][hex]
 [![Build Tool][build tool]][hex]
