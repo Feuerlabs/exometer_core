@@ -16,7 +16,7 @@ jobs:
       image: erlang:${{ matrix.otp_version }}
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
     - name: CI tests
-    - run: make ci
-    - shell: bash
+      run: make ci
