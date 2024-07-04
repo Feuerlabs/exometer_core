@@ -27,6 +27,7 @@
     test_eval_script_match_case/1,
     test_wrapping_counter/1,
     test_update_or_create/1,
+    test_update_or_create_w_tuple_name/1,
     test_update_or_create2/1,
     test_default_override/1,
     test_std_histogram/1,
@@ -84,6 +85,7 @@ groups() ->
      {test_defaults, [shuffle],
       [
        test_update_or_create,
+       test_update_or_create_w_tuple_name,
        test_update_or_create2,
        test_default_override
       ]},
@@ -268,6 +270,18 @@ test_update_or_create(_Config) ->
     exometer_admin:set_default([a,'_',d], histogram, []),
     histogram = exometer:info(exometer_admin:find_auto_template([a,b,d]), type),
     counter = exometer:info(exometer_admin:find_auto_template([a,b,c]), type),
+    ok.
+
+test_update_or_create_w_tuple_name(_Config) ->
+    N = [a,b,{c,1}],
+    {error, not_found} = exometer:update(N, 2),
+    {error, no_template} = exometer:update_or_create(N, 10),
+    exometer_admin:set_default(N, counter, []),
+    ok = exometer:update_or_create(N, 3),
+    {ok, [{value, 3}]} = exometer:get_value(N, [value]),
+    exometer_admin:set_default([a,'_',d], histogram, []),
+    histogram = exometer:info(exometer_admin:find_auto_template([a,{b,1},d]), type),
+    counter = exometer:info(exometer_admin:find_auto_template(N), type),
     ok.
 
 test_default_override(_Config) ->
