@@ -612,7 +612,7 @@ find_auto_template(Name) ->
 make_patterns(Type, Name) when is_list(Name) ->
     Prefixes = prefixes(Name),
     [{ #exometer_entry{name = {default,Type,[V || {_,V} <- Pfx]}, _ = '_'},
-       [{'or',{'=:=',V,X},{'=:=',V,''}} || {X,V} <- Pfx], ['$_'] }
+       [{'or',{'=:=',V,{const,X}},{'=:=',V,''}} || {X,V} <- Pfx], ['$_'] }
      || Pfx <- Prefixes].
 
 prefixes(L) ->
