@@ -43,7 +43,8 @@
     test_app_predef/1,
     test_function_match/1,
     test_status/1,
-    test_slide_ignore_outdated/1
+    test_slide_ignore_outdated/1,
+    test_info_options/1
    ]).
 
 %% utility exports
@@ -113,7 +114,8 @@ groups() ->
       ]},
      {test_info, [shuffle],
       [
-       test_status
+       test_status,
+       test_info_options
       ]}
     ].
 
@@ -501,6 +503,13 @@ test_slide_ignore_outdated(_Config) ->
    0 = proplists:get_value(n, V3),
 
    ok.
+
+
+% Check if options are not duplicated.
+test_info_options(_Config) ->
+    ok = exometer:new([?FUNCTION_NAME], gauge, [{custom_opt, works}]),
+    [{custom_opt,works}] = exometer:info([?FUNCTION_NAME], options).
+
 
 %%%===================================================================
 %%% Internal functions
