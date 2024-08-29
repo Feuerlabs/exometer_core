@@ -1731,9 +1731,9 @@ init_subscriber({apply, {M, F, A}}) ->
     lists:foreach(fun(Sub) ->
                           init_subscriber(Sub)
                   end, apply(M, F, A));
-init_subscriber({select, Expr}) when tuple_size(Expr)==3;
-                                     tuple_size(Expr)==4;
-                                     tuple_size(Expr)==5 ->
+init_subscriber({select, Expr}) when tuple_size(Expr)==4;
+                                     tuple_size(Expr)==5;
+                                     tuple_size(Expr)==6 ->
     {Pattern, Reporter, DataPoint, Interval, Retry, Extra} =
         case Expr of
             {P, R, D, I} -> {P, R, D, I, true, undefined};
@@ -1750,7 +1750,7 @@ init_subscriber({select, Expr}) when tuple_size(Expr)==3;
 
 init_subscriber(Other) ->
     ?log(warning, "Incorrect static subscriber spec ~p. "
-             "Use { Reporter, Metric, DataPoint, Interval [, Extra ]}~n",
+             "Use { Reporter, Metric, DataPoint [, Interval [, Extra ] ]}~n",
              [ Other ]).
 
 get_reporter_status(R) ->
