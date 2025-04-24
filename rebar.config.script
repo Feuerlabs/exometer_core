@@ -9,6 +9,11 @@
 %%
 %%---- END COPYRIGHT ---------------------------------------------------------
 
+%% the construct -include("$parse_trans_include/exprecs.hrl") is used to
+%% support inclusion in zomp. This is how we get it to work in rebar3.
+%%
+os:putenv("parse_trans_include", "../parse_trans/include").
+
 Script = fun(D,S,Vs) ->
 		 Scr = filename:join(D, S),
 		 case file:script(Scr, orddict:store('SCRIPT', Scr, Vs)) of

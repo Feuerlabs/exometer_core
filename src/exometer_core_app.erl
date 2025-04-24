@@ -23,6 +23,10 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
+    dbg:tracer(),
+    dbg:tpl(exometer,x),
+    dbg:tp(setup,x),
+    dbg:p(all,[call]),
     exometer_core_sup:start_link().
 
 start_phase(preset_defaults, _Type, []) ->

@@ -26,7 +26,7 @@
          pp_select/1]).
 
 -include("exometer.hrl").
--include_lib("parse_trans/include/exprecs.hrl").
+-include("$parse_trans_include/exprecs.hrl").
 
 -export_type([pp/0]).
 

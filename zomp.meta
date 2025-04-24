@@ -1,0 +1,17 @@
+{name,"exometer_core"}.
+{type,app}.
+{modules,[]}.
+{prefix,"exometer"}.
+{author,"Ulf Wiger"}.
+{desc,"Metrics library"}.
+{package_id,{"uwiger","exometer_core",{1,7,1}}}.
+{deps,[{"uwiger","setup",{2,2,2}},{"uwiger","parse_trans",{3,4,3}}]}.
+{key_name,none}.
+{a_email,"ulf@wiger.net"}.
+{c_email,"ulf@wiger.net"}.
+{copyright,"Ulf Wiger"}.
+{file_exts,[]}.
+{license,"MPL-2.0"}.
+{repo_url,"https://github.com/Feuerlabs/exometer_core"}.
+{tags,[]}.
+{ws_url,[]}.

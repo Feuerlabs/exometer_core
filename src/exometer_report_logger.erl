@@ -77,7 +77,7 @@
              input,
              output}).
 
--include_lib("parse_trans/include/exprecs.hrl").
+-include("$parse_trans_include/exprecs.hrl").
 -export_records([tcp, udp, tty, ets, int]).
 
 %% input records
