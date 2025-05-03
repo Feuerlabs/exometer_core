@@ -331,7 +331,7 @@ handle_call({ensure, Name, Type, Opts}, _From, S) ->
         [] ->
             #exometer_entry{options = OptsTemplate} = E0 =
                 lookup_definition(Name, Type, Opts),
-            E1 = process_opts(E0, OptsTemplate ++ Opts),
+            E1 = process_opts(E0, OptsTemplate),
             Res = exometer:create_entry(E1),
             report_new_entry(E1),
             {reply, Res, S}
